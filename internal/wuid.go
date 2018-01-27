@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 )
@@ -15,11 +14,11 @@ type WUID struct {
 	sync.Mutex
 	N      uint64
 	Tag    string
-	Logger *log.Logger
+	Logger Logger
 	Renew  func() error
 }
 
-func NewWUID(tag string, logger *log.Logger) *WUID {
+func NewWUID(tag string, logger Logger) *WUID {
 	return &WUID{Tag: tag, Logger: logger}
 }
 
@@ -36,11 +35,16 @@ func (this *WUID) Next() uint64 {
 				return
 			}
 			if err != nil {
-				this.Logger.Println(fmt.Sprintf("renew failed. tag: %s, reason: %s", this.Tag, err.Error()))
+				this.Logger.Warn(fmt.Sprintf("renew failed. tag: %s, reason: %s", this.Tag, err.Error()))
 			} else {
-				this.Logger.Println(fmt.Sprintf("renew succeeded. tag: %s", this.Tag))
+				this.Logger.Info(fmt.Sprintf("renew succeeded. tag: %s", this.Tag))
 			}
 		}()
 	}
 	return x
+}
+
+type Logger interface {
+	Info(args ...interface{})
+	Warn(args ...interface{})
 }

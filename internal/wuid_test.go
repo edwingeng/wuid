@@ -2,7 +2,6 @@ package internal
 
 import (
 	"log"
-	"os"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -55,8 +54,18 @@ func TestWUID_Next_Concurrent(t *testing.T) {
 	}
 }
 
+type simpleLogger struct{}
+
+func (sl simpleLogger) Info(args ...interface{}) {
+	log.Println(args...)
+}
+
+func (sl simpleLogger) Warn(args ...interface{}) {
+	log.Println(args...)
+}
+
 func TestWUID_Next_Renew(t *testing.T) {
-	wuid := NewWUID("default", log.New(os.Stderr, "", 0))
+	wuid := NewWUID("default", &simpleLogger{})
 	wuid.Renew = func() error {
 		atomic.StoreUint64(&wuid.N, ((atomic.LoadUint64(&wuid.N)>>40)+1)<<40)
 		return nil

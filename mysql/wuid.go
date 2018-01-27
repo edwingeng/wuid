@@ -3,18 +3,21 @@ package wuid
 import (
 	"database/sql"
 	"errors"
-	"log"
 	"sync/atomic"
 
 	"github.com/edwingeng/wuid/internal"
 	_ "github.com/go-sql-driver/mysql"
 )
 
+type Logger interface {
+	internal.Logger
+}
+
 type WUID struct {
 	w *internal.WUID
 }
 
-func NewWUID(tag string, logger *log.Logger) *WUID {
+func NewWUID(tag string, logger Logger) *WUID {
 	return &WUID{w: internal.NewWUID(tag, logger)}
 }
 
