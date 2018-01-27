@@ -2,28 +2,23 @@ package wuid
 
 import (
 	"errors"
-	"fmt"
 	"log"
-	"sync"
 	"sync/atomic"
 
+	"github.com/edwingeng/wuid/internal"
 	"github.com/go-redis/redis"
 )
 
-const (
-	criticalValue uint64 = (1 << 40) - 86400*1000000
-)
-
 type WUID struct {
-	sync.Mutex
-	n      uint64
-	tag    string
-	logger *log.Logger
-	renew  func() error
+	w *internal.WUID
 }
 
 func NewWUID(tag string, logger *log.Logger) *WUID {
-	return &WUID{tag: tag, logger: logger}
+	return &WUID{w: internal.NewWUID(tag, logger)}
+}
+
+func (this *WUID) Next() uint64 {
+	return this.w.Next()
 }
 
 func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
@@ -45,39 +40,17 @@ func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
 		return err
 	}
 
-	atomic.StoreUint64(&this.n, uint64(v)<<40)
+	atomic.StoreUint64(&this.w.N, uint64(v)<<40)
 
-	this.Lock()
-	defer this.Unlock()
+	this.w.Lock()
+	defer this.w.Unlock()
 
-	if this.renew != nil {
+	if this.w.Renew != nil {
 		return nil
 	}
-	this.renew = func() error {
+	this.w.Renew = func() error {
 		return this.LoadH24FromRedis(addr, pass, key)
 	}
 
 	return nil
-}
-
-func (this *WUID) Next() uint64 {
-	x := atomic.AddUint64(&this.n, 1)
-	if x&0xFFFFFFFFFF >= criticalValue && x&0x01FFFFFF == 0 {
-		this.Lock()
-		renew := this.renew
-		this.Unlock()
-
-		go func() {
-			err := renew()
-			if this.logger == nil {
-				return
-			}
-			if err != nil {
-				this.logger.Println(fmt.Sprintf("renew failed. tag: %s, reason: %s", this.tag, err.Error()))
-			} else {
-				this.logger.Println(fmt.Sprintf("renew succeeded. tag: %s", this.tag))
-			}
-		}()
-	}
-	return x
 }

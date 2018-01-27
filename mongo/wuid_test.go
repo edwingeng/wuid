@@ -2,6 +2,7 @@ package wuid
 
 import (
 	"math/rand"
+	"sync/atomic"
 	"testing"
 )
 
@@ -11,19 +12,19 @@ func getMongoConfig() (string, string, string, string, string, string) {
 
 func TestWUID_LoadH24FromMongo(t *testing.T) {
 	var nextValue uint64
-	wuid := NewWUID()
+	wuid := NewWUID("default", nil)
 	for i := 0; i < 100; i++ {
 		err := wuid.LoadH24FromMongo(getMongoConfig())
 		if err != nil {
 			t.Fatal(err)
 		}
 		if i == 0 {
-			nextValue = wuid.n
+			nextValue = atomic.LoadUint64(&wuid.w.N)
 		} else {
 			nextValue = ((nextValue >> 40) + 1) << 40
 		}
-		if wuid.n != nextValue {
-			t.Fatalf("wuid.n is %d, while it should be %d", wuid.n, nextValue)
+		if atomic.LoadUint64(&wuid.w.N) != nextValue {
+			t.Fatalf("wuid.n is %d, while it should be %d", atomic.LoadUint64(&wuid.w.N), nextValue)
 		}
 		for j := 0; j < rand.Intn(10); j++ {
 			wuid.Next()
