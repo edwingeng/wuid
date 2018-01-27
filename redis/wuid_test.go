@@ -1,10 +1,14 @@
 package wuid
 
 import (
+	"log"
 	"math/rand"
+	"os"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/go-redis/redis"
 )
@@ -14,13 +18,13 @@ func getRedisConfig() (string, string, string) {
 }
 
 func TestWUID_Next(t *testing.T) {
-	wuid := NewWUID()
+	wuid := NewWUID("default", nil)
 	err := wuid.LoadH24FromRedis(getRedisConfig())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	v := wuid.n
+	v := atomic.LoadUint64(&wuid.n)
 	for i := 0; i < 100; i++ {
 		v++
 		if id := wuid.Next(); id != v {
@@ -36,7 +40,7 @@ func (p uint64Slice) Less(i, j int) bool { return p[i] < p[j] }
 func (p uint64Slice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 func TestWUID_Next_Concurrent(t *testing.T) {
-	wuid := NewWUID()
+	wuid := NewWUID("default", nil)
 	err := wuid.LoadH24FromRedis(getRedisConfig())
 	if err != nil {
 		t.Fatal(err)
@@ -67,6 +71,31 @@ func TestWUID_Next_Concurrent(t *testing.T) {
 	}
 }
 
+func TestWUID_Next_Renew(t *testing.T) {
+	wuid := NewWUID("default", log.New(os.Stderr, "", 0))
+	err := wuid.LoadH24FromRedis(getRedisConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	n1 := wuid.Next()
+	kk := ((criticalValue + 0x01FFFFFF) & ^uint64(0x01FFFFFF)) - 1
+
+	atomic.StoreUint64(&wuid.n, (n1>>40<<40)|kk)
+	wuid.Next()
+	time.Sleep(time.Millisecond * 200)
+	n2 := wuid.Next()
+
+	atomic.StoreUint64(&wuid.n, (n2>>40<<40)|kk)
+	wuid.Next()
+	time.Sleep(time.Millisecond * 200)
+	n3 := wuid.Next()
+
+	if n1>>40 == n2>>40 || n2>>40 == n3>>40 {
+		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>40, n2>>40, n3>>40)
+	}
+}
+
 func TestWUID_LoadH24FromRedis(t *testing.T) {
 	addr, pass, key := getRedisConfig()
 	client := redis.NewClient(&redis.Options{
@@ -82,15 +111,15 @@ func TestWUID_LoadH24FromRedis(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wuid := NewWUID()
+	wuid := NewWUID("default", nil)
 	for i := 0; i < 100; i++ {
 		err = wuid.LoadH24FromRedis(getRedisConfig())
 		if err != nil {
 			t.Fatal(err)
 		}
 		v := (uint64(i) + 1) << 40
-		if wuid.n != v {
-			t.Fatalf("wuid.n is %d, while it should be %d", wuid.n, v)
+		if atomic.LoadUint64(&wuid.n) != v {
+			t.Fatalf("wuid.n is %d, while it should be %d", atomic.LoadUint64(&wuid.n), v)
 		}
 		for j := 0; j < rand.Intn(10); j++ {
 			wuid.Next()
