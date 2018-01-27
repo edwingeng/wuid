@@ -36,7 +36,9 @@ import "github.com/edwingeng/wuid/redis"
 
 g := wuid.NewWUID("default", nil)
 g.LoadH24FromRedis("127.0.0.1:6379", "", "wuid")
-fmt.Println(g.Next())
+for i := 0; i < 10; i++ {
+    fmt.Println(g.Next())
+}
 ```
 
 ### MySQL
@@ -45,7 +47,9 @@ import "github.com/edwingeng/wuid/mysql"
 
 g := wuid.NewWUID("default", nil)
 g.LoadH24FromMysql("127.0.0.1:3306", "root", "", "test", "wuid")
-fmt.Println(g.Next())
+for i := 0; i < 10; i++ {
+    fmt.Println(g.Next())
+}
 ```
 
 ### MongoDB
@@ -54,7 +58,9 @@ import "github.com/edwingeng/wuid/mongo"
 
 g := wuid.NewWUID("default", nil)
 g.LoadH24FromMongo("127.0.0.1:27017", "", "", "test", "foo", "wuid")
-fmt.Println(g.Next())
+for i := 0; i < 10; i++ {
+    fmt.Println(g.Next())
+}
 ```
 
 # Mysql table creation
