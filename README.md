@@ -1,7 +1,7 @@
 # Overview
 - WUID is a unique number generator, not a UUID implementation.
 - WUID is **100** times faster than UUID and **4600** times faster than generating unique numbers with Redis.
-- WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data source. By now, Redis, MySQL, and MongoDB are supported.
+- WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store. By now, Redis, MySQL, and MongoDB are supported.
 
 # Benchmarks
 ```
