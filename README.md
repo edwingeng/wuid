@@ -9,6 +9,8 @@ BenchmarkWUID           200000000            9.38 ns/op        0 B/op          0
 BenchmarkWUID-4         200000000            9.19 ns/op        0 B/op          0 allocs/op
 BenchmarkRand           100000000           21.6  ns/op        0 B/op          0 allocs/op
 BenchmarkRand-4         100000000           21.9  ns/op        0 B/op          0 allocs/op
+BenchmarkTimestamp        2000000          669    ns/op        0 B/op          0 allocs/op
+BenchmarkTimestamp-4      2000000          664    ns/op        0 B/op          0 allocs/op
 BenchmarkUUID_V1          2000000          888    ns/op        0 B/op          0 allocs/op
 BenchmarkUUID_V1-4        2000000          871    ns/op        0 B/op          0 allocs/op
 BenchmarkUUID_V2          2000000          904    ns/op        0 B/op          0 allocs/op

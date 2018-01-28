@@ -3,6 +3,7 @@ package bench
 import (
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/edwingeng/wuid/redis"
 	"github.com/go-redis/redis"
@@ -30,6 +31,12 @@ func BenchmarkWUID(b *testing.B) {
 func BenchmarkRand(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rand.Int63()
+	}
+}
+
+func BenchmarkTimestamp(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		time.Now().Nanosecond()
 	}
 }
 
