@@ -3,6 +3,7 @@ package wuid
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"sync/atomic"
 
 	"github.com/edwingeng/wuid/internal"
@@ -52,7 +53,7 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 	}
 	defer db.Close()
 
-	result, err := db.Exec("REPLACE INTO wuid (x) VALUES (0)")
+	result, err := db.Exec(fmt.Sprintf("REPLACE INTO %s (x) VALUES (0)", table))
 	if err != nil {
 		return err
 	}
