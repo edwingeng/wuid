@@ -1,5 +1,7 @@
 # Overview
-WUID is NOT a UUID implementation. It generates 'unique' 64-bit integers in sequence. The high 24 bits are loaded from a data source. By now, Redis, MySQL, and MongoDB are supported.
+- WUID is a unique number generator, not a UUID implementation.
+- WUID is **100** times faster than UUID and **4600** times faster than generating unique numbers with Redis.
+- WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data source. By now, Redis, MySQL, and MongoDB are supported.
 
 # Benchmarks
 ```
@@ -34,8 +36,11 @@ go get -u github.com/edwingeng/wuid
 ``` go
 import "github.com/edwingeng/wuid/redis"
 
+// Setup
 g := wuid.NewWUID("default", nil)
 g.LoadH24FromRedis("127.0.0.1:6379", "", "wuid")
+
+// Generate
 for i := 0; i < 10; i++ {
     fmt.Println(g.Next())
 }
@@ -45,8 +50,11 @@ for i := 0; i < 10; i++ {
 ``` go
 import "github.com/edwingeng/wuid/mysql"
 
+// Setup
 g := wuid.NewWUID("default", nil)
 g.LoadH24FromMysql("127.0.0.1:3306", "root", "", "test", "wuid")
+
+// Generate
 for i := 0; i < 10; i++ {
     fmt.Println(g.Next())
 }
@@ -56,8 +64,11 @@ for i := 0; i < 10; i++ {
 ``` go
 import "github.com/edwingeng/wuid/mongo"
 
+// Setup
 g := wuid.NewWUID("default", nil)
 g.LoadH24FromMongo("127.0.0.1:27017", "", "", "test", "foo", "wuid")
+
+// Generate
 for i := 0; i < 10; i++ {
     fmt.Println(g.Next())
 }
