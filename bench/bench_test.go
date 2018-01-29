@@ -53,9 +53,21 @@ func BenchmarkUUID_V2(b *testing.B) {
 	}
 }
 
+func BenchmarkUUID_V3(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		uuid.NewV3(uuid.NamespaceDNS, "example.com")
+	}
+}
+
 func BenchmarkUUID_V4(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		uuid.NewV4()
+	}
+}
+
+func BenchmarkUUID_V5(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		uuid.NewV5(uuid.NamespaceDNS, "example.com")
 	}
 }
 

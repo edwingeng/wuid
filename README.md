@@ -1,18 +1,20 @@
 # Overview
 - WUID is a unique number generator, but not a UUID implementation.
-- WUID is **100** times faster than UUID and **4600** times faster than generating unique numbers with Redis.
+- WUID is **10-135** times faster than UUID and **4600** times faster than generating unique numbers with Redis.
 - WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store. By now, Redis, MySQL, and MongoDB are supported.
 
 # Benchmarks
 ```
-BenchmarkWUID           200000000            9.38 ns/op        0 B/op          0 allocs/op
-BenchmarkRand           100000000           21.6  ns/op        0 B/op          0 allocs/op
-BenchmarkTimestamp        2000000          669    ns/op        0 B/op          0 allocs/op
-BenchmarkUUID_V1          2000000          888    ns/op        0 B/op          0 allocs/op
-BenchmarkUUID_V2          2000000          904    ns/op        0 B/op          0 allocs/op
-BenchmarkUUID_V4          1000000         1325    ns/op       16 B/op          1 allocs/op
-BenchmarkRedis              30000        43970    ns/op      176 B/op          5 allocs/op
-BenchmarkSnowflake        5000000          220    ns/op        0 B/op          0 allocs/op
+BenchmarkWUID       100000000           10.3 ns/op         0 B/op          0 allocs/op
+BenchmarkRand        50000000           24.6 ns/op         0 B/op          0 allocs/op
+BenchmarkTimestamp  100000000           12.3 ns/op         0 B/op          0 allocs/op
+BenchmarkUUID_V1     20000000          107 ns/op           0 B/op          0 allocs/op
+BenchmarkUUID_V2     20000000          106 ns/op           0 B/op          0 allocs/op
+BenchmarkUUID_V3      5000000          359 ns/op         144 B/op          4 allocs/op
+BenchmarkUUID_V4      1000000         1376 ns/op          16 B/op          1 allocs/op
+BenchmarkUUID_V5      3000000          424 ns/op         176 B/op          4 allocs/op
+BenchmarkRedis          30000        46501 ns/op         176 B/op          5 allocs/op
+BenchmarkSnowflake    5000000          244 ns/op           0 B/op          0 allocs/op
 ```
 
 # Features
