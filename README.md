@@ -12,6 +12,7 @@ BenchmarkUUID_V1          2000000          888    ns/op        0 B/op          0
 BenchmarkUUID_V2          2000000          904    ns/op        0 B/op          0 allocs/op
 BenchmarkUUID_V4          1000000         1325    ns/op       16 B/op          1 allocs/op
 BenchmarkRedis              30000        43970    ns/op      176 B/op          5 allocs/op
+BenchmarkSnowflake        5000000          220    ns/op        0 B/op          0 allocs/op
 ```
 
 # Features

@@ -28,7 +28,3 @@
 [[constraint]]
   branch = "master"
   name = "github.com/globalsign/mgo"
-
-[[constraint]]
-  name = "github.com/google/uuid"
-  version = "0.2.0"

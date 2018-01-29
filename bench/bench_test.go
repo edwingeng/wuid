@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/edwingeng/wuid/redis"
 	"github.com/go-redis/redis"
 	"github.com/satori/go.uuid"
@@ -71,5 +72,17 @@ func BenchmarkRedis(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+func BenchmarkSnowflake(b *testing.B) {
+	node, err := snowflake.NewNode(1)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		node.Generate()
 	}
 }
