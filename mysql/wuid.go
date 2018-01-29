@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"sync/atomic"
 
 	"github.com/edwingeng/wuid/internal"
 	_ "github.com/go-sql-driver/mysql"
@@ -18,8 +17,12 @@ type WUID struct {
 	w *internal.WUID
 }
 
-func NewWUID(tag string, logger Logger) *WUID {
-	return &WUID{w: internal.NewWUID(tag, logger)}
+func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
+	var opts2 []internal.Option
+	for _, opt := range opts {
+		opts2 = append(opts2, internal.Option(opt))
+	}
+	return &WUID{w: internal.NewWUID(tag, logger, opts2...)}
 }
 
 func (this *WUID) Next() uint64 {
@@ -65,7 +68,7 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 		return errors.New("the h24 should not be 0")
 	}
 
-	atomic.StoreUint64(&this.w.N, uint64(lastInsertedId)<<40)
+	this.w.Reset(uint64(lastInsertedId) << 40)
 
 	this.w.Lock()
 	defer this.w.Unlock()
@@ -78,4 +81,10 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 	}
 
 	return nil
+}
+
+type Option internal.Option
+
+func WithSection(section uint8) Option {
+	return Option(internal.WithSection(section))
 }

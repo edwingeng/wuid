@@ -12,14 +12,19 @@ const (
 
 type WUID struct {
 	sync.Mutex
-	N      uint64
-	Tag    string
-	Logger Logger
-	Renew  func() error
+	Section uint8
+	N       uint64
+	Tag     string
+	Logger  Logger
+	Renew   func() error
 }
 
-func NewWUID(tag string, logger Logger) *WUID {
-	return &WUID{Tag: tag, Logger: logger}
+func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
+	w := &WUID{Tag: tag, Logger: logger}
+	for _, opt := range opts {
+		opt(w)
+	}
+	return w
 }
 
 func (this *WUID) Next() uint64 {
@@ -44,7 +49,26 @@ func (this *WUID) Next() uint64 {
 	return x
 }
 
+func (this *WUID) Reset(n uint64) {
+	if this.Section == 0 {
+		atomic.StoreUint64(&this.N, n)
+	} else {
+		atomic.StoreUint64(&this.N, (n&0x0FFFFFFFFFFFFFFF)|(uint64(this.Section&0xF)<<60))
+	}
+}
+
 type Logger interface {
 	Info(args ...interface{})
 	Warn(args ...interface{})
+}
+
+type Option func(*WUID)
+
+func WithSection(section uint8) Option {
+	if section == 0 || section >= 16 {
+		panic("section must be in between [1, 15]")
+	}
+	return func(w *WUID) {
+		w.Section = section
+	}
 }

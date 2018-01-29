@@ -2,7 +2,6 @@ package wuid
 
 import (
 	"errors"
-	"sync/atomic"
 
 	"github.com/edwingeng/wuid/internal"
 	"github.com/go-redis/redis"
@@ -16,8 +15,12 @@ type WUID struct {
 	w *internal.WUID
 }
 
-func NewWUID(tag string, logger Logger) *WUID {
-	return &WUID{w: internal.NewWUID(tag, logger)}
+func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
+	var opts2 []internal.Option
+	for _, opt := range opts {
+		opts2 = append(opts2, internal.Option(opt))
+	}
+	return &WUID{w: internal.NewWUID(tag, logger, opts2...)}
 }
 
 func (this *WUID) Next() uint64 {
@@ -46,7 +49,7 @@ func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
 		return errors.New("the h24 should not be 0")
 	}
 
-	atomic.StoreUint64(&this.w.N, uint64(v)<<40)
+	this.w.Reset(uint64(v) << 40)
 
 	this.w.Lock()
 	defer this.w.Unlock()
@@ -59,4 +62,10 @@ func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
 	}
 
 	return nil
+}
+
+type Option internal.Option
+
+func WithSection(section uint8) Option {
+	return Option(internal.WithSection(section))
 }

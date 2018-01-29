@@ -15,15 +15,15 @@ func getRedisConfig() (string, string, string) {
 }
 
 func BenchmarkWUID(b *testing.B) {
-	wuid := wuid.NewWUID("default", nil)
-	err := wuid.LoadH24FromRedis(getRedisConfig())
+	g := wuid.NewWUID("default", nil)
+	err := g.LoadH24FromRedis(getRedisConfig())
 	if err != nil {
 		b.Fatal(err)
 	}
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		wuid.Next()
+		g.Next()
 	}
 
 }
