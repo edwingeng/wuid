@@ -28,14 +28,14 @@ func TestWUID_LoadH24FromRedis(t *testing.T) {
 	}
 
 	wuid := NewWUID("default", nil)
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		err = wuid.LoadH24FromRedis(getRedisConfig())
 		if err != nil {
 			t.Fatal(err)
 		}
 		v := (uint64(i) + 1) << 40
 		if atomic.LoadUint64(&wuid.w.N) != v {
-			t.Fatalf("wuid.n is %d, while it should be %d", atomic.LoadUint64(&wuid.w.N), v)
+			t.Fatalf("wuid.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&wuid.w.N), v, i)
 		}
 		for j := 0; j < rand.Intn(10); j++ {
 			wuid.Next()

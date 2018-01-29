@@ -61,8 +61,11 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 	if err != nil {
 		return err
 	}
+	if lastInsertedId == 0 {
+		return errors.New("the h24 should not be 0")
+	}
 
-	atomic.StoreUint64(&this.w.N, uint64(lastInsertedId&0x0FFF)<<40)
+	atomic.StoreUint64(&this.w.N, uint64(lastInsertedId)<<40)
 
 	this.w.Lock()
 	defer this.w.Unlock()

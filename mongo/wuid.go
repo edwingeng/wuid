@@ -54,6 +54,7 @@ func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string)
 	if err != nil {
 		return err
 	}
+	defer mongo.Close()
 
 	change := mgo.Change{
 		Update:    bson.M{"$inc": bson.M{"n": int32(1)}},
@@ -65,6 +66,9 @@ func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string)
 	_, err = c.FindId(docId).Apply(change, &m)
 	if err != nil {
 		return err
+	}
+	if m["n"].(int) == 0 {
+		return errors.New("the h24 should not be 0")
 	}
 
 	atomic.StoreUint64(&this.w.N, uint64(m["n"].(int))<<40)

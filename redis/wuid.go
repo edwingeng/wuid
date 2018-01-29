@@ -42,6 +42,9 @@ func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
 	if err != nil {
 		return err
 	}
+	if v == 0 {
+		return errors.New("the h24 should not be 0")
+	}
 
 	atomic.StoreUint64(&this.w.N, uint64(v)<<40)
 

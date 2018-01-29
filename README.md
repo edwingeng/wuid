@@ -78,3 +78,6 @@ CREATE TABLE `wuid` (
     UNIQUE KEY `h` (`h`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 ```
+
+# Best practices
+- Use different keys/tables/docs for different purposes.

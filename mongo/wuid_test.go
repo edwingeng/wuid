@@ -13,7 +13,7 @@ func getMongoConfig() (string, string, string, string, string, string) {
 func TestWUID_LoadH24FromMongo(t *testing.T) {
 	var nextValue uint64
 	wuid := NewWUID("default", nil)
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		err := wuid.LoadH24FromMongo(getMongoConfig())
 		if err != nil {
 			t.Fatal(err)
@@ -24,7 +24,7 @@ func TestWUID_LoadH24FromMongo(t *testing.T) {
 			nextValue = ((nextValue >> 40) + 1) << 40
 		}
 		if atomic.LoadUint64(&wuid.w.N) != nextValue {
-			t.Fatalf("wuid.n is %d, while it should be %d", atomic.LoadUint64(&wuid.w.N), nextValue)
+			t.Fatalf("wuid.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&wuid.w.N), nextValue, i)
 		}
 		for j := 0; j < rand.Intn(10); j++ {
 			wuid.Next()
