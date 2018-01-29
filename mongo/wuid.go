@@ -24,6 +24,7 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 	return &WUID{w: internal.NewWUID(tag, logger, opts2...)}
 }
 
+// Next returns the next unique number.
 func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
@@ -91,6 +92,8 @@ func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string)
 
 type Option internal.Option
 
+// WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 15].
+// It occupies the highest 4 bits of the numbers.
 func WithSection(section uint8) Option {
 	return Option(internal.WithSection(section))
 }

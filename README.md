@@ -20,6 +20,7 @@ BenchmarkRedis              30000        43970    ns/op      176 B/op          5
 - Being unique within a data center
 - Being unique across time
 - Auto-renew when the low 40 bits are about to run out
+- Section ID support
 
 # Install
 ``` bash
@@ -78,6 +79,9 @@ CREATE TABLE `wuid` (
     UNIQUE KEY `h` (`h`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 ```
+
+# Section ID
+You can specify a custom section ID for the generated numbers with `wuid.WithSection` when you call `wuid.NewWUID`. The section ID must be in between [1, 15]. It occupies the highest 4 bits of the numbers.
 
 # Best practices
 - Use different keys/tables/docs for different purposes.
