@@ -72,7 +72,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 	}
 
 	n1 := g.Next()
-	kk := ((criticalValue + 0x01FFFFFF) & ^uint64(0x01FFFFFF)) - 1
+	kk := ((criticalValue + renewInterval) & ^renewInterval) - 1
 
 	atomic.StoreUint64(&g.N, (n1>>40<<40)|kk)
 	g.Next()

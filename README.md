@@ -20,6 +20,7 @@ BenchmarkSnowflake        5000000          220    ns/op        0 B/op          0
 - Thread-safe
 - Being unique within a data center
 - Being unique across time
+- Being capable of generating 100M unique numbers in a single second
 - Auto-renew when the low 40 bits are about to run out
 - Section ID support
 
