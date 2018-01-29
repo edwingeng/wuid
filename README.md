@@ -25,7 +25,13 @@ BenchmarkSnowflake        5000000          220    ns/op        0 B/op          0
 
 # Install
 ``` bash
-go get -u github.com/edwingeng/wuid
+go get -u github.com/edwingeng/wuid/...
+```
+Or choose one from the following commands if you use `dep`:
+``` bash
+dep ensure -add github.com/edwingeng/wuid/mongo
+dep ensure -add github.com/edwingeng/wuid/mysql
+dep ensure -add github.com/edwingeng/wuid/redis
 ```
 
 # Usage examples
@@ -82,7 +88,7 @@ CREATE TABLE `wuid` (
 ```
 
 # Section ID
-You can specify a custom section ID for the generated numbers with `wuid.WithSection` when you call `wuid.NewWUID`. The section ID must be in between [1, 15]. It occupies the highest 4 bits of the numbers.
+You can specify a custom section ID for the generated numbers with `wuid.WithSection` when you call `wuid.NewWUID`. The section ID must be in between `[1, 15]`. It occupies the highest 4 bits of the numbers.
 
 # Best practices
 - Use different keys/tables/docs for different purposes.
