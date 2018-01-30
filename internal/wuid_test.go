@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"log"
 	"sort"
 	"sync"
@@ -57,36 +58,54 @@ func TestWUID_Next_Concurrent(t *testing.T) {
 type simpleLogger struct{}
 
 func (sl simpleLogger) Info(args ...interface{}) {
-	log.Println(args...)
+	str := "INFO\t"
+	str += fmt.Sprint(args...)
+	log.Println(str)
 }
 
 func (sl simpleLogger) Warn(args ...interface{}) {
-	log.Println(args...)
+	str := "WARN\t"
+	str += fmt.Sprint(args...)
+	log.Println(str)
 }
 
 func TestWUID_Next_Renew(t *testing.T) {
 	g := NewWUID("default", &simpleLogger{})
 	g.Renew = func() error {
-		atomic.StoreUint64(&g.N, ((atomic.LoadUint64(&g.N)>>40)+1)<<40)
+		g.Reset(((atomic.LoadUint64(&g.N) >> 40) + 1) << 40)
 		return nil
 	}
 
 	n1 := g.Next()
 	kk := ((criticalValue + renewInterval) & ^renewInterval) - 1
 
-	atomic.StoreUint64(&g.N, (n1>>40<<40)|kk)
+	g.Reset((n1 >> 40 << 40) | kk)
 	g.Next()
 	time.Sleep(time.Millisecond * 200)
 	n2 := g.Next()
 
-	atomic.StoreUint64(&g.N, (n2>>40<<40)|kk)
+	g.Reset((n2 >> 40 << 40) | kk)
 	g.Next()
 	time.Sleep(time.Millisecond * 200)
 	n3 := g.Next()
 
-	if n1>>40 == n2>>40 || n2>>40 == n3>>40 {
+	if n2>>40 == n1>>40 || n3>>40 == n2>>40 {
 		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>40, n2>>40, n3>>40)
 	}
+}
+
+func TestWUID_Next_Renew_Panic(t *testing.T) {
+	g := NewWUID("default", &simpleLogger{})
+	g.Renew = func() error {
+		panic("foo")
+	}
+
+	n1 := g.Next()
+	kk := ((criticalValue + renewInterval) & ^renewInterval) - 1
+	g.Reset((n1 >> 40 << 40) | kk)
+	g.Next()
+
+	time.Sleep(time.Millisecond * 200)
 }
 
 func TestWithSection_Panic(t *testing.T) {
@@ -103,7 +122,7 @@ func TestWithSection_Panic(t *testing.T) {
 	}
 }
 
-func TestWUID_Reset(t *testing.T) {
+func TestWithSection_Reset(t *testing.T) {
 	for i := 0; i < 24; i++ {
 		n := uint64(1) << (uint(i) + 40)
 		for j := uint8(1); j < 16; j++ {

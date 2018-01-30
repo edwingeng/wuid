@@ -36,14 +36,20 @@ func (this *WUID) Next() uint64 {
 		this.Unlock()
 
 		go func() {
+			defer func() {
+				if r := recover(); r != nil && this.Logger != nil {
+					this.Logger.Warn(fmt.Sprintf("[wuid] panic. tag: %s, reason: %+v", this.Tag, r))
+				}
+			}()
+
 			err := renew()
 			if this.Logger == nil {
 				return
 			}
 			if err != nil {
-				this.Logger.Warn(fmt.Sprintf("renew failed. tag: %s, reason: %s", this.Tag, err.Error()))
+				this.Logger.Warn(fmt.Sprintf("[wuid] renew failed. tag: %s, reason: %s", this.Tag, err.Error()))
 			} else {
-				this.Logger.Info(fmt.Sprintf("renew succeeded. tag: %s", this.Tag))
+				this.Logger.Info(fmt.Sprintf("[wuid] renew succeeded. tag: %s", this.Tag))
 			}
 		}()
 	}
