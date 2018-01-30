@@ -20,9 +20,9 @@ BenchmarkSnowflake        5000000          220    ns/op        0 B/op          0
 - Thread-safe
 - Being unique within a data center
 - Being unique across time
+- Being unique globally if all data centers share the same data store in a certain manner, or they use different section IDs
 - Being capable of generating 100M unique numbers in a single second
 - Auto-renew when the low 40 bits are about to run out
-- Section ID support
 
 # Install
 ``` bash
@@ -46,7 +46,7 @@ g.LoadH24FromRedis("127.0.0.1:6379", "", "wuid")
 
 // Generate
 for i := 0; i < 10; i++ {
-    fmt.Println(g.Next())
+    fmt.Printf("%#016x\n", g.Next())
 }
 ```
 
@@ -60,7 +60,7 @@ g.LoadH24FromMysql("127.0.0.1:3306", "root", "", "test", "wuid")
 
 // Generate
 for i := 0; i < 10; i++ {
-    fmt.Println(g.Next())
+    fmt.Printf("%#016x\n", g.Next())
 }
 ```
 
@@ -74,7 +74,37 @@ g.LoadH24FromMongo("127.0.0.1:27017", "", "", "test", "foo", "wuid")
 
 // Generate
 for i := 0; i < 10; i++ {
-    fmt.Println(g.Next())
+    fmt.Printf("%#016x\n", g.Next())
+}
+```
+
+### Callback
+``` go
+import "github.com/edwingeng/wuid/callback"
+
+// Setup
+g := wuid.NewWUID("default", nil)
+g.LoadH24WithCallback(func() (uint64, error) {
+    resp, err := http.Get("https://stackoverflow.com/")
+    if resp != nil {
+        defer resp.Body.Close()
+    }
+    if err != nil {
+        return 0, err
+    }
+
+    bytes, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        return 0, err
+    }
+
+    fmt.Printf("Page size: %d (%#06x)\n\n", len(bytes), len(bytes))
+    return uint64(len(bytes)), nil
+})
+
+// Generate
+for i := 0; i < 10; i++ {
+    fmt.Printf("%#016x\n", g.Next())
 }
 ```
 
@@ -93,3 +123,6 @@ You can specify a custom section ID for the generated numbers with `wuid.WithSec
 
 # Best practices
 - Use different keys/tables/docs for different purposes.
+
+# Special thanks
+- [dustinfog](https://github.com/dustinfog)
