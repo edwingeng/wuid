@@ -35,6 +35,7 @@ Or choose one from the following commands if you use `dep`:
 dep ensure -add github.com/edwingeng/wuid/mongo
 dep ensure -add github.com/edwingeng/wuid/mysql
 dep ensure -add github.com/edwingeng/wuid/redis
+dep ensure -add github.com/edwingeng/wuid/callback
 ```
 
 # Usage examples
