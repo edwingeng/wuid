@@ -108,6 +108,30 @@ func TestWUID_Next_Renew_Panic(t *testing.T) {
 	time.Sleep(time.Millisecond * 200)
 }
 
+func TestWUID_VerifyH24(t *testing.T) {
+	g1 := NewWUID("default", nil)
+	if err := g1.VerifyH24(100); err != nil {
+		t.Fatalf("VerifyH24 does not work as expected. n: 100, error: %s", err)
+	}
+	if err := g1.VerifyH24(0); err == nil {
+		t.Fatalf("VerifyH24 does not work as expected. n: 0")
+	}
+	if err := g1.VerifyH24(0x1000000); err == nil {
+		t.Fatalf("VerifyH24 does not work as expected. n: 0x1000000")
+	}
+
+	g2 := NewWUID("default", nil, WithSection(1))
+	if err := g2.VerifyH24(100); err != nil {
+		t.Fatalf("VerifyH24 does not work as expected. section: 1, n: 100, error: %s", err)
+	}
+	if err := g2.VerifyH24(0); err == nil {
+		t.Fatalf("VerifyH24 does not work as expected. section: 1, n: 0")
+	}
+	if err := g2.VerifyH24(0x100000); err == nil {
+		t.Fatalf("VerifyH24 does not work as expected. section: 1, n: 0x100000")
+	}
+}
+
 func TestWithSection_Panic(t *testing.T) {
 	for i := 0; i < 256; i++ {
 		func(j uint8) {

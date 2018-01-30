@@ -71,8 +71,8 @@ func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string)
 	if err != nil {
 		return err
 	}
-	if m["n"].(int) == 0 {
-		return errors.New("the h24 should not be 0")
+	if err = this.w.VerifyH24(uint64(m["n"].(int))); err != nil {
+		return err
 	}
 
 	this.w.Reset(uint64(m["n"].(int)) << 40)

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -62,6 +63,24 @@ func (this *WUID) Reset(n uint64) {
 	} else {
 		atomic.StoreUint64(&this.N, n&0x0FFFFFFFFFFFFFFF|uint64(this.Section)<<60)
 	}
+}
+
+func (this *WUID) VerifyH24(h24 uint64) error {
+	if h24 == 0 {
+		return errors.New("the h24 should not be 0")
+	}
+
+	if this.Section == 0 {
+		if h24 > 0xFFFFFF {
+			return errors.New("the h24 should not exceed 0xFFFFFF")
+		}
+	} else {
+		if h24 > 0x0FFFFF {
+			return errors.New("the h20 should not exceed 0x0FFFFF")
+		}
+	}
+
+	return nil
 }
 
 type Logger interface {

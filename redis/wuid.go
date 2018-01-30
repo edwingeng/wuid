@@ -42,15 +42,15 @@ func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
 	})
 	defer client.Close()
 
-	v, err := client.Incr(key).Result()
+	h24, err := client.Incr(key).Result()
 	if err != nil {
 		return err
 	}
-	if v == 0 {
-		return errors.New("the h24 should not be 0")
+	if err = this.w.VerifyH24(uint64(h24)); err != nil {
+		return err
 	}
 
-	this.w.Reset(uint64(v) << 40)
+	this.w.Reset(uint64(h24) << 40)
 
 	this.w.Lock()
 	defer this.w.Unlock()
