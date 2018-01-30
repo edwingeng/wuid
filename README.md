@@ -22,7 +22,7 @@ BenchmarkSnowflake    5000000          244 ns/op           0 B/op          0 all
 - Thread-safe
 - Being unique within a data center
 - Being unique across time
-- Being unique globally if all data centers share the same data store in a certain manner, or they use different section IDs
+- Being unique globally if all data centers share the same data store, or they use different section IDs
 - Being capable of generating 100M unique numbers in a single second
 - Auto-renew when the low 40 bits are about to run out
 
