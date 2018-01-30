@@ -112,7 +112,7 @@ func TestWithSection_Panic(t *testing.T) {
 	for i := 0; i < 256; i++ {
 		func(j uint8) {
 			defer func() {
-				recover()
+				_ = recover()
 			}()
 			WithSection(j)
 			if j == 0 || j >= 16 {
