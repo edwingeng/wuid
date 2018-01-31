@@ -67,16 +67,16 @@ func (this *WUID) Reset(n uint64) {
 
 func (this *WUID) VerifyH24(h24 uint64) error {
 	if h24 == 0 {
-		return errors.New("the h24 should not be 0")
+		return errors.New("the h24 should not be 0. tag: " + this.Tag)
 	}
 
 	if this.Section == 0 {
 		if h24 > 0xFFFFFF {
-			return errors.New("the h24 should not exceed 0xFFFFFF")
+			return errors.New("the h24 should not exceed 0xFFFFFF. tag: " + this.Tag)
 		}
 	} else {
 		if h24 > 0x0FFFFF {
-			return errors.New("the h20 should not exceed 0x0FFFFF")
+			return errors.New("the h20 should not exceed 0x0FFFFF. tag: " + this.Tag)
 		}
 	}
 

@@ -32,16 +32,16 @@ func (this *WUID) Next() uint64 {
 
 func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error {
 	if len(addr) == 0 {
-		return errors.New("addr cannot be empty")
+		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(user) == 0 {
-		return errors.New("user cannot be empty")
+		return errors.New("user cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(dbName) == 0 {
-		return errors.New("dbName cannot be empty")
+		return errors.New("dbName cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(table) == 0 {
-		return errors.New("table cannot be empty")
+		return errors.New("table cannot be empty. tag: " + this.w.Tag)
 	}
 
 	var dsn string

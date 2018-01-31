@@ -30,10 +30,10 @@ func (this *WUID) Next() uint64 {
 
 func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
 	if len(addr) == 0 {
-		return errors.New("addr cannot be empty")
+		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(key) == 0 {
-		return errors.New("key cannot be empty")
+		return errors.New("key cannot be empty. tag: " + this.w.Tag)
 	}
 
 	client := redis.NewClient(&redis.Options{

@@ -32,7 +32,7 @@ func (this *WUID) Next() uint64 {
 // The return value should look like 0x000123, not 0x0001230000000000.
 func (this *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 	if cb == nil {
-		return errors.New("cb cannot be nil")
+		return errors.New("cb cannot be nil. tag: " + this.w.Tag)
 	}
 
 	h24, err := cb()
@@ -45,11 +45,11 @@ func (this *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 	}
 	if this.w.Section == 0 {
 		if h24 == atomic.LoadUint64(&this.w.N)>>40 {
-			return errors.New(fmt.Sprintf("the h24 should be a different value other than %d", h24))
+			return errors.New(fmt.Sprintf("the h24 should be a different value other than %d. tag: %s", h24, this.w.Tag))
 		}
 	} else {
 		if h24 == (atomic.LoadUint64(&this.w.N)>>40)&0x0FFFFF {
-			return errors.New(fmt.Sprintf("the h20 should be a different value other than %d", h24))
+			return errors.New(fmt.Sprintf("the h20 should be a different value other than %d. tag: %s", h24, this.w.Tag))
 		}
 	}
 

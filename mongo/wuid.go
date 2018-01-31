@@ -36,16 +36,16 @@ func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string)
 
 func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docId string, dialTimeout time.Duration) error {
 	if len(addr) == 0 {
-		return errors.New("addr cannot be empty")
+		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(dbName) == 0 {
-		return errors.New("dbName cannot be empty")
+		return errors.New("dbName cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(coll) == 0 {
-		return errors.New("coll cannot be empty")
+		return errors.New("coll cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(docId) == 0 {
-		return errors.New("docId cannot be empty")
+		return errors.New("docId cannot be empty. tag: " + this.w.Tag)
 	}
 
 	var url = "mongodb://" + addr + "/" + coll
