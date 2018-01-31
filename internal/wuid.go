@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	criticalValue uint64 = (1 << 40) * 8 / 10
-	renewInterval uint64 = 0x01FFFFFFFF
+	CriticalValue uint64 = (1 << 40) * 8 / 10
+	RenewInterval uint64 = 0x01FFFFFFFF
 )
 
 type WUID struct {
@@ -31,7 +31,7 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 
 func (this *WUID) Next() uint64 {
 	x := atomic.AddUint64(&this.N, 1)
-	if x&0xFFFFFFFFFF >= criticalValue && x&renewInterval == 0 {
+	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
 		this.Lock()
 		renew := this.Renew
 		this.Unlock()

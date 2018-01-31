@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -55,29 +56,35 @@ func TestWUID_Next_Concurrent(t *testing.T) {
 	}
 }
 
-type simpleLogger struct{}
+type simpleLogger struct {
+	numInfo int
+	numWarn int
+}
 
-func (sl simpleLogger) Info(args ...interface{}) {
+func (this *simpleLogger) Info(args ...interface{}) {
 	str := "INFO\t"
 	str += fmt.Sprint(args...)
 	log.Println(str)
+	this.numInfo++
 }
 
-func (sl simpleLogger) Warn(args ...interface{}) {
+func (this *simpleLogger) Warn(args ...interface{}) {
 	str := "WARN\t"
 	str += fmt.Sprint(args...)
 	log.Println(str)
+	this.numWarn++
 }
 
 func TestWUID_Next_Renew(t *testing.T) {
-	g := NewWUID("default", &simpleLogger{})
+	logger := &simpleLogger{}
+	g := NewWUID("default", logger)
 	g.Renew = func() error {
 		g.Reset(((atomic.LoadUint64(&g.N) >> 40) + 1) << 40)
 		return nil
 	}
 
 	n1 := g.Next()
-	kk := ((criticalValue + renewInterval) & ^renewInterval) - 1
+	kk := ((CriticalValue + RenewInterval) & ^RenewInterval) - 1
 
 	g.Reset((n1 >> 40 << 40) | kk)
 	g.Next()
@@ -92,6 +99,34 @@ func TestWUID_Next_Renew(t *testing.T) {
 	if n2>>40 == n1>>40 || n3>>40 == n2>>40 {
 		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>40, n2>>40, n3>>40)
 	}
+	if logger.numInfo != 2 {
+		t.Fatalf("there should be 2 renew logs of the info type. actual: %d", logger.numInfo)
+	}
+}
+
+func TestWUID_Next_Renew_Fail(t *testing.T) {
+	logger := &simpleLogger{}
+	g := NewWUID("default", logger)
+	g.Renew = func() error {
+		return errors.New("foo")
+	}
+
+	n1 := g.Next()
+	kk := ((CriticalValue + RenewInterval) & ^RenewInterval) - 1
+
+	g.Reset((n1 >> 40 << 40) | kk)
+	g.Next()
+	time.Sleep(time.Millisecond * 200)
+	n2 := g.Next()
+
+	g.Reset((n2 >> 40 << 40) | kk)
+	g.Next()
+	time.Sleep(time.Millisecond * 200)
+	g.Next()
+
+	if logger.numWarn != 2 {
+		t.Fatalf("there should be 2 renew logs of the warn type. actual: %d", logger.numWarn)
+	}
 }
 
 func TestWUID_Next_Renew_Panic(t *testing.T) {
@@ -101,7 +136,7 @@ func TestWUID_Next_Renew_Panic(t *testing.T) {
 	}
 
 	n1 := g.Next()
-	kk := ((criticalValue + renewInterval) & ^renewInterval) - 1
+	kk := ((CriticalValue + RenewInterval) & ^RenewInterval) - 1
 	g.Reset((n1 >> 40 << 40) | kk)
 	g.Next()
 

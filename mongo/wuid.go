@@ -2,6 +2,7 @@ package wuid
 
 import (
 	"errors"
+	"time"
 
 	"github.com/edwingeng/wuid/internal"
 	"github.com/globalsign/mgo"
@@ -30,6 +31,10 @@ func (this *WUID) Next() uint64 {
 }
 
 func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string) error {
+	return this.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docId, 10*time.Second)
+}
+
+func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docId string, dialTimeout time.Duration) error {
 	if len(addr) == 0 {
 		return errors.New("addr cannot be empty")
 	}
@@ -43,18 +48,8 @@ func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string)
 		return errors.New("docId cannot be empty")
 	}
 
-	var url = "mongodb://"
-	if len(user) > 0 {
-		url += user
-		if len(pass) > 0 {
-			url += ":" + pass
-		}
-		url += "@"
-	}
-	url += addr
-	url += "/" + coll
-
-	mongo, err := mgo.Dial(url)
+	var url = "mongodb://" + addr + "/" + coll
+	mongo, err := mgo.DialWithTimeout(url, dialTimeout)
 	if err != nil {
 		return err
 	}
@@ -64,6 +59,11 @@ func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string)
 		Update:    bson.M{"$inc": bson.M{"n": int32(1)}},
 		Upsert:    true,
 		ReturnNew: true,
+	}
+	if len(user) > 0 {
+		if err = mongo.DB(dbName).Login(user, pass); err != nil {
+			return err
+		}
 	}
 	c := mongo.DB(dbName).C(coll)
 	m := make(map[string]interface{})

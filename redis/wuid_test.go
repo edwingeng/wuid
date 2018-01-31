@@ -4,7 +4,9 @@ import (
 	"math/rand"
 	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/edwingeng/wuid/internal"
 	"github.com/go-redis/redis"
 )
 
@@ -40,5 +42,57 @@ func TestWUID_LoadH24FromRedis(t *testing.T) {
 		for j := 0; j < rand.Intn(10); j++ {
 			g.Next()
 		}
+	}
+}
+
+func TestWUID_LoadH24FromRedis_Error(t *testing.T) {
+	g := NewWUID("default", nil)
+	addr, pass, key := getRedisConfig()
+
+	if g.LoadH24FromRedis("", pass, key) == nil {
+		t.Fatal("addr is not properly checked")
+	}
+	if g.LoadH24FromRedis(addr, pass, "") == nil {
+		t.Fatal("key is not properly checked")
+	}
+
+	if err := g.LoadH24FromRedis("127.0.0.1:30000", pass, key); err == nil {
+		t.Fatal("LoadH24FromRedis should fail when is address is invalid")
+	}
+}
+
+func TestWUID_Next_Renew(t *testing.T) {
+	g := NewWUID("default", nil)
+	err := g.LoadH24FromRedis(getRedisConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	n1 := g.Next()
+	kk := ((internal.CriticalValue + internal.RenewInterval) & ^internal.RenewInterval) - 1
+
+	g.w.Reset((n1 >> 40 << 40) | kk)
+	g.Next()
+	time.Sleep(time.Millisecond * 200)
+	n2 := g.Next()
+
+	g.w.Reset((n2 >> 40 << 40) | kk)
+	g.Next()
+	time.Sleep(time.Millisecond * 200)
+	n3 := g.Next()
+
+	if n2>>40 == n1>>40 || n3>>40 == n2>>40 {
+		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>40, n2>>40, n3>>40)
+	}
+}
+
+func TestWithSection(t *testing.T) {
+	g := NewWUID("default", nil, WithSection(15))
+	err := g.LoadH24FromRedis(getRedisConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Next()>>60 != 15 {
+		t.Fatal("WithSection does not work as expected")
 	}
 }

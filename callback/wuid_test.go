@@ -8,12 +8,25 @@ import (
 )
 
 func TestWUID_LoadH24WithCallback_Error(t *testing.T) {
+	var err error
 	g := NewWUID("default", nil)
-	err := g.LoadH24WithCallback(func() (uint64, error) {
+	err = g.LoadH24WithCallback(nil)
+	if err == nil {
+		t.Fatal("LoadH24WithCallback should fail when cb is nil")
+	}
+
+	err = g.LoadH24WithCallback(func() (uint64, error) {
 		return 0, errors.New("foo")
 	})
 	if err == nil {
 		t.Fatal("LoadH24WithCallback should fail when cb returns an error")
+	}
+
+	err = g.LoadH24WithCallback(func() (uint64, error) {
+		return 0, nil
+	})
+	if err == nil {
+		t.Fatal("LoadH24WithCallback should fail when cb returns an invalid h24")
 	}
 }
 
