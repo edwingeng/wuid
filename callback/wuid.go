@@ -1,3 +1,10 @@
+/*
+WUID is a unique number generator. It is 10-135 times faster than UUID and 4600 times faster than
+generating unique numbers with Redis.
+
+WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store.
+By now, Redis, MySQL, and MongoDB are supported.
+*/
 package wuid
 
 import (
@@ -8,14 +15,21 @@ import (
 	"github.com/edwingeng/wuid/internal"
 )
 
+/*
+Logger includes internal.Logger, while internal.Logger includes:
+	Info(args ...interface{})
+	Warn(args ...interface{})
+*/
 type Logger interface {
 	internal.Logger
 }
 
+// WUID is an extremely fast unique number generator.
 type WUID struct {
 	w *internal.WUID
 }
 
+// NewWUID creates a new WUID instance.
 func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 	var opts2 []internal.Option
 	for _, opt := range opts {
@@ -29,7 +43,9 @@ func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
 
-// The return value should look like 0x000123, not 0x0001230000000000.
+// LoadH24WithCallback calls cb to get a number, and then sets it as the high 24 bits of the unique
+// numbers that Next generates.
+// The number returned by cb should look like 0x000123, not 0x0001230000000000.
 func (this *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 	if cb == nil {
 		return errors.New("cb cannot be nil. tag: " + this.w.Tag)
@@ -68,6 +84,7 @@ func (this *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 	return nil
 }
 
+// You should never use Option directly.
 type Option internal.Option
 
 // WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 15].

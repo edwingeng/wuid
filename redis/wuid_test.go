@@ -1,6 +1,7 @@
 package wuid
 
 import (
+	"fmt"
 	"math/rand"
 	"sync/atomic"
 	"testing"
@@ -94,5 +95,16 @@ func TestWithSection(t *testing.T) {
 	}
 	if g.Next()>>60 != 15 {
 		t.Fatal("WithSection does not work as expected")
+	}
+}
+
+func Example() {
+	// Setup
+	g := NewWUID("default", nil)
+	g.LoadH24FromRedis("127.0.0.1:6379", "", "wuid")
+
+	// Generate
+	for i := 0; i < 10; i++ {
+		fmt.Printf("%#016x\n", g.Next())
 	}
 }

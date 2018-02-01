@@ -2,7 +2,10 @@ package wuid
 
 import (
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"sync/atomic"
 	"testing"
 )
@@ -89,5 +92,30 @@ func TestWUID_LoadH24WithCallback_Same(t *testing.T) {
 	_ = g2.LoadH24WithCallback(cb)
 	if err := g2.LoadH24WithCallback(cb); err == nil {
 		t.Fatal("LoadH24WithCallback should return an error")
+	}
+}
+
+func Example() {
+	g := NewWUID("default", nil)
+	g.LoadH24WithCallback(func() (uint64, error) {
+		resp, err := http.Get("https://stackoverflow.com/")
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		if err != nil {
+			return 0, err
+		}
+
+		bytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return 0, err
+		}
+
+		fmt.Printf("Page size: %d (%#06x)\n\n", len(bytes), len(bytes))
+		return uint64(len(bytes)), nil
+	})
+
+	for i := 0; i < 10; i++ {
+		fmt.Printf("%#016x\n", g.Next())
 	}
 }

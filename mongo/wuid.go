@@ -1,3 +1,10 @@
+/*
+WUID is a unique number generator. It is 10-135 times faster than UUID and 4600 times faster than
+generating unique numbers with Redis.
+
+WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store.
+By now, Redis, MySQL, and MongoDB are supported.
+*/
 package wuid
 
 import (
@@ -9,14 +16,21 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
+/*
+Logger includes internal.Logger, while internal.Logger includes:
+	Info(args ...interface{})
+	Warn(args ...interface{})
+*/
 type Logger interface {
 	internal.Logger
 }
 
+// WUID is an extremely fast unique number generator.
 type WUID struct {
 	w *internal.WUID
 }
 
+// NewWUID creates a new WUID instance.
 func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 	var opts2 []internal.Option
 	for _, opt := range opts {
@@ -30,8 +44,10 @@ func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
 
+// LoadH24FromMongo adds 1 to a specific number in your MongoDB, fetches the new value, and then
+// sets it as the high 24 bits of the unique numbers that Next generates.
 func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string) error {
-	return this.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docId, 10*time.Second)
+	return this.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docId, 3*time.Second)
 }
 
 func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docId string, dialTimeout time.Duration) error {
@@ -90,6 +106,7 @@ func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, do
 	return nil
 }
 
+// You should never use Option directly.
 type Option internal.Option
 
 // WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 15].
