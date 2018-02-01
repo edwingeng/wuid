@@ -1,6 +1,6 @@
 /*
-WUID is a unique number generator. It is 10-135 times faster than UUID and 4600 times faster than
-generating unique numbers with Redis.
+Package wuid provides WUID, an extremely fast unique number generator. It is 10-135 times faster
+than UUID and 4600 times faster than generating unique numbers with Redis.
 
 WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store.
 By now, Redis, MySQL, and MongoDB are supported.
@@ -61,11 +61,11 @@ func (this *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 	}
 	if this.w.Section == 0 {
 		if h24 == atomic.LoadUint64(&this.w.N)>>40 {
-			return errors.New(fmt.Sprintf("the h24 should be a different value other than %d. tag: %s", h24, this.w.Tag))
+			return fmt.Errorf("the h24 should be a different value other than %d. tag: %s", h24, this.w.Tag)
 		}
 	} else {
 		if h24 == (atomic.LoadUint64(&this.w.N)>>40)&0x0FFFFF {
-			return errors.New(fmt.Sprintf("the h20 should be a different value other than %d. tag: %s", h24, this.w.Tag))
+			return fmt.Errorf("the h20 should be a different value other than %d. tag: %s", h24, this.w.Tag)
 		}
 	}
 
@@ -84,7 +84,7 @@ func (this *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 	return nil
 }
 
-// You should never use Option directly.
+// Option should never be used directly.
 type Option internal.Option
 
 // WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 15].

@@ -1,6 +1,6 @@
 /*
-WUID is a unique number generator. It is 10-135 times faster than UUID and 4600 times faster than
-generating unique numbers with Redis.
+Package wuid provides WUID, an extremely fast unique number generator. It is 10-135 times faster
+than UUID and 4600 times faster than generating unique numbers with Redis.
 
 WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store.
 By now, Redis, MySQL, and MongoDB are supported.
@@ -44,13 +44,15 @@ func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
 
-// LoadH24FromMongo adds 1 to a specific number in your MongoDB, fetches the new value, and then
-// sets it as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docId string) error {
-	return this.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docId, 3*time.Second)
+// LoadH24FromMongo adds 1 to a specific number in your MongoDB, fetches the new value,
+// and then sets it as the high 24 bits of the unique numbers that Next generates.
+func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docID string) error {
+	return this.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID, 3*time.Second)
 }
 
-func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docId string, dialTimeout time.Duration) error {
+// LoadH24FromMongoWithTimeout adds 1 to a specific number in your MongoDB, fetches the new value,
+// and then sets it as the high 24 bits of the unique numbers that Next generates.
+func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID string, dialTimeout time.Duration) error {
 	if len(addr) == 0 {
 		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
 	}
@@ -60,8 +62,8 @@ func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, do
 	if len(coll) == 0 {
 		return errors.New("coll cannot be empty. tag: " + this.w.Tag)
 	}
-	if len(docId) == 0 {
-		return errors.New("docId cannot be empty. tag: " + this.w.Tag)
+	if len(docID) == 0 {
+		return errors.New("docID cannot be empty. tag: " + this.w.Tag)
 	}
 
 	var url = "mongodb://" + addr + "/" + coll
@@ -83,7 +85,7 @@ func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, do
 	}
 	c := mongo.DB(dbName).C(coll)
 	m := make(map[string]interface{})
-	_, err = c.FindId(docId).Apply(change, &m)
+	_, err = c.FindId(docID).Apply(change, &m)
 	if err != nil {
 		return err
 	}
@@ -100,13 +102,13 @@ func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, do
 		return nil
 	}
 	this.w.Renew = func() error {
-		return this.LoadH24FromMongo(addr, user, pass, dbName, coll, docId)
+		return this.LoadH24FromMongo(addr, user, pass, dbName, coll, docID)
 	}
 
 	return nil
 }
 
-// You should never use Option directly.
+// Option should never be used directly.
 type Option internal.Option
 
 // WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 15].

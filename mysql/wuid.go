@@ -1,6 +1,6 @@
 /*
-WUID is a unique number generator. It is 10-135 times faster than UUID and 4600 times faster than
-generating unique numbers with Redis.
+Package wuid provides WUID, an extremely fast unique number generator. It is 10-135 times faster
+than UUID and 4600 times faster than generating unique numbers with Redis.
 
 WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store.
 By now, Redis, MySQL, and MongoDB are supported.
@@ -13,7 +13,7 @@ import (
 	"fmt"
 
 	"github.com/edwingeng/wuid/internal"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // mysql driver
 )
 
 /*
@@ -77,15 +77,15 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 	if err != nil {
 		return err
 	}
-	lastInsertedId, err := result.LastInsertId()
+	lastInsertedID, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
-	if err = this.w.VerifyH24(uint64(lastInsertedId)); err != nil {
+	if err = this.w.VerifyH24(uint64(lastInsertedID)); err != nil {
 		return err
 	}
 
-	this.w.Reset(uint64(lastInsertedId) << 40)
+	this.w.Reset(uint64(lastInsertedID) << 40)
 
 	this.w.Lock()
 	defer this.w.Unlock()
@@ -100,7 +100,7 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 	return nil
 }
 
-// You should never use Option directly.
+// Option should never be used directly.
 type Option internal.Option
 
 // WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 15].

@@ -39,22 +39,22 @@ func TestWUID_LoadH24FromMongo(t *testing.T) {
 
 func TestWUID_LoadH24FromMongo_Error(t *testing.T) {
 	g := NewWUID("default", nil)
-	addr, user, pass, dbName, coll, docId := getMongoConfig()
+	addr, user, pass, dbName, coll, docID := getMongoConfig()
 
-	if g.LoadH24FromMongo("", user, pass, dbName, coll, docId) == nil {
+	if g.LoadH24FromMongo("", user, pass, dbName, coll, docID) == nil {
 		t.Fatal("addr is not properly checked")
 	}
-	if g.LoadH24FromMongo(addr, user, pass, "", coll, docId) == nil {
+	if g.LoadH24FromMongo(addr, user, pass, "", coll, docID) == nil {
 		t.Fatal("dbName is not properly checked")
 	}
-	if g.LoadH24FromMongo(addr, user, pass, dbName, "", docId) == nil {
+	if g.LoadH24FromMongo(addr, user, pass, dbName, "", docID) == nil {
 		t.Fatal("coll is not properly checked")
 	}
 	if g.LoadH24FromMongo(addr, user, pass, dbName, coll, "") == nil {
-		t.Fatal("docId is not properly checked")
+		t.Fatal("docID is not properly checked")
 	}
 
-	if g.LoadH24FromMongoWithTimeout("127.0.0.1:30000", user, pass, dbName, coll, docId, time.Second) == nil {
+	if g.LoadH24FromMongoWithTimeout("127.0.0.1:30000", user, pass, dbName, coll, docID, time.Second) == nil {
 		t.Fatal("LoadH24FromMongoWithTimeout should fail when is address is invalid")
 	}
 }
@@ -62,8 +62,8 @@ func TestWUID_LoadH24FromMongo_Error(t *testing.T) {
 func TestWUID_LoadH24FromMongo_UserPass(t *testing.T) {
 	var err error
 	g := NewWUID("default", nil)
-	addr, _, _, dbName, coll, docId := getMongoConfig()
-	err = g.LoadH24FromMongo(addr, "wuid", "abc123", dbName, coll, docId)
+	addr, _, _, dbName, coll, docID := getMongoConfig()
+	err = g.LoadH24FromMongo(addr, "wuid", "abc123", dbName, coll, docID)
 	if err != nil {
 		if strings.Contains(err.Error(), "Authentication failed") {
 			t.Log("you need to create a user in your MongoDB. username: wuid, password: abc123")
@@ -71,7 +71,7 @@ func TestWUID_LoadH24FromMongo_UserPass(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	err = g.LoadH24FromMongo(addr, "wuid", "nopass", dbName, coll, docId)
+	err = g.LoadH24FromMongo(addr, "wuid", "nopass", dbName, coll, docID)
 	if err == nil {
 		t.Fatal("LoadH24FromMongo should fail when the password is incorrect")
 	}
