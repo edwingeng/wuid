@@ -38,18 +38,18 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 }
 
 // Next returns the next unique number.
-func (w *WUID) Next() uint64 {
-	return w.w.Next()
+func (me *WUID) Next() uint64 {
+	return me.w.Next()
 }
 
 // LoadH24FromRedis adds 1 to a specific number in your Redis, fetches the new value, and then
 // sets it as the high 24 bits of the unique numbers that Next generates.
-func (w *WUID) LoadH24FromRedis(addr, pass, key string) error {
+func (me *WUID) LoadH24FromRedis(addr, pass, key string) error {
 	if len(addr) == 0 {
-		return errors.New("addr cannot be empty. tag: " + w.w.Tag)
+		return errors.New("addr cannot be empty. tag: " + me.w.Tag)
 	}
 	if len(key) == 0 {
-		return errors.New("key cannot be empty. tag: " + w.w.Tag)
+		return errors.New("key cannot be empty. tag: " + me.w.Tag)
 	}
 
 	client := redis.NewClient(&redis.Options{
@@ -62,20 +62,20 @@ func (w *WUID) LoadH24FromRedis(addr, pass, key string) error {
 	if err != nil {
 		return err
 	}
-	if err = w.w.VerifyH24(uint64(h24)); err != nil {
+	if err = me.w.VerifyH24(uint64(h24)); err != nil {
 		return err
 	}
 
-	w.w.Reset(uint64(h24) << 40)
+	me.w.Reset(uint64(h24) << 40)
 
-	w.w.Lock()
-	defer w.w.Unlock()
+	me.w.Lock()
+	defer me.w.Unlock()
 
-	if w.w.Renew != nil {
+	if me.w.Renew != nil {
 		return nil
 	}
-	w.w.Renew = func() error {
-		return w.LoadH24FromRedis(addr, pass, key)
+	me.w.Renew = func() error {
+		return me.LoadH24FromRedis(addr, pass, key)
 	}
 
 	return nil

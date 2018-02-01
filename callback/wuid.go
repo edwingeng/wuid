@@ -39,16 +39,16 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 }
 
 // Next returns the next unique number.
-func (w *WUID) Next() uint64 {
-	return w.w.Next()
+func (me *WUID) Next() uint64 {
+	return me.w.Next()
 }
 
 // LoadH24WithCallback calls cb to get a number, and then sets it as the high 24 bits of the unique
 // numbers that Next generates.
 // The number returned by cb should look like 0x000123, not 0x0001230000000000.
-func (w *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
+func (me *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 	if cb == nil {
-		return errors.New("cb cannot be nil. tag: " + w.w.Tag)
+		return errors.New("cb cannot be nil. tag: " + me.w.Tag)
 	}
 
 	h24, err := cb()
@@ -56,29 +56,29 @@ func (w *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 		return err
 	}
 
-	if err = w.w.VerifyH24(h24); err != nil {
+	if err = me.w.VerifyH24(h24); err != nil {
 		return err
 	}
-	if w.w.Section == 0 {
-		if h24 == atomic.LoadUint64(&w.w.N)>>40 {
-			return fmt.Errorf("the h24 should be a different value other than %d. tag: %s", h24, w.w.Tag)
+	if me.w.Section == 0 {
+		if h24 == atomic.LoadUint64(&me.w.N)>>40 {
+			return fmt.Errorf("the h24 should be a different value other than %d. tag: %s", h24, me.w.Tag)
 		}
 	} else {
-		if h24 == (atomic.LoadUint64(&w.w.N)>>40)&0x0FFFFF {
-			return fmt.Errorf("the h20 should be a different value other than %d. tag: %s", h24, w.w.Tag)
+		if h24 == (atomic.LoadUint64(&me.w.N)>>40)&0x0FFFFF {
+			return fmt.Errorf("the h20 should be a different value other than %d. tag: %s", h24, me.w.Tag)
 		}
 	}
 
-	w.w.Reset(uint64(h24) << 40)
+	me.w.Reset(uint64(h24) << 40)
 
-	w.w.Lock()
-	defer w.w.Unlock()
+	me.w.Lock()
+	defer me.w.Unlock()
 
-	if w.w.Renew != nil {
+	if me.w.Renew != nil {
 		return nil
 	}
-	w.w.Renew = func() error {
-		return w.LoadH24WithCallback(cb)
+	me.w.Renew = func() error {
+		return me.LoadH24WithCallback(cb)
 	}
 
 	return nil

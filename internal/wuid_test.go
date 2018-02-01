@@ -61,18 +61,18 @@ type simpleLogger struct {
 	numWarn int
 }
 
-func (w *simpleLogger) Info(args ...interface{}) {
+func (me *simpleLogger) Info(args ...interface{}) {
 	str := "INFO\t"
 	str += fmt.Sprint(args...)
 	log.Println(str)
-	w.numInfo++
+	me.numInfo++
 }
 
-func (w *simpleLogger) Warn(args ...interface{}) {
+func (me *simpleLogger) Warn(args ...interface{}) {
 	str := "WARN\t"
 	str += fmt.Sprint(args...)
 	log.Println(str)
-	w.numWarn++
+	me.numWarn++
 }
 
 func TestWUID_Next_Renew(t *testing.T) {
