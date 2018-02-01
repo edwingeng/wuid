@@ -40,30 +40,30 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 }
 
 // Next returns the next unique number.
-func (this *WUID) Next() uint64 {
-	return this.w.Next()
+func (w *WUID) Next() uint64 {
+	return w.w.Next()
 }
 
 // LoadH24FromMongo adds 1 to a specific number in your MongoDB, fetches the new value,
 // and then sets it as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docID string) error {
-	return this.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID, 3*time.Second)
+func (w *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docID string) error {
+	return w.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID, 3*time.Second)
 }
 
 // LoadH24FromMongoWithTimeout adds 1 to a specific number in your MongoDB, fetches the new value,
 // and then sets it as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID string, dialTimeout time.Duration) error {
+func (w *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID string, dialTimeout time.Duration) error {
 	if len(addr) == 0 {
-		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
+		return errors.New("addr cannot be empty. tag: " + w.w.Tag)
 	}
 	if len(dbName) == 0 {
-		return errors.New("dbName cannot be empty. tag: " + this.w.Tag)
+		return errors.New("dbName cannot be empty. tag: " + w.w.Tag)
 	}
 	if len(coll) == 0 {
-		return errors.New("coll cannot be empty. tag: " + this.w.Tag)
+		return errors.New("coll cannot be empty. tag: " + w.w.Tag)
 	}
 	if len(docID) == 0 {
-		return errors.New("docID cannot be empty. tag: " + this.w.Tag)
+		return errors.New("docID cannot be empty. tag: " + w.w.Tag)
 	}
 
 	var url = "mongodb://" + addr + "/" + coll
@@ -89,20 +89,20 @@ func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, do
 	if err != nil {
 		return err
 	}
-	if err = this.w.VerifyH24(uint64(m["n"].(int))); err != nil {
+	if err = w.w.VerifyH24(uint64(m["n"].(int))); err != nil {
 		return err
 	}
 
-	this.w.Reset(uint64(m["n"].(int)) << 40)
+	w.w.Reset(uint64(m["n"].(int)) << 40)
 
-	this.w.Lock()
-	defer this.w.Unlock()
+	w.w.Lock()
+	defer w.w.Unlock()
 
-	if this.w.Renew != nil {
+	if w.w.Renew != nil {
 		return nil
 	}
-	this.w.Renew = func() error {
-		return this.LoadH24FromMongo(addr, user, pass, dbName, coll, docID)
+	w.w.Renew = func() error {
+		return w.LoadH24FromMongo(addr, user, pass, dbName, coll, docID)
 	}
 
 	return nil

@@ -40,24 +40,24 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 }
 
 // Next returns the next unique number.
-func (this *WUID) Next() uint64 {
-	return this.w.Next()
+func (w *WUID) Next() uint64 {
+	return w.w.Next()
 }
 
 // LoadH24FromMysql adds 1 to a specific number in your MySQL, fetches the new value, and then
 // sets it as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error {
+func (w *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error {
 	if len(addr) == 0 {
-		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
+		return errors.New("addr cannot be empty. tag: " + w.w.Tag)
 	}
 	if len(user) == 0 {
-		return errors.New("user cannot be empty. tag: " + this.w.Tag)
+		return errors.New("user cannot be empty. tag: " + w.w.Tag)
 	}
 	if len(dbName) == 0 {
-		return errors.New("dbName cannot be empty. tag: " + this.w.Tag)
+		return errors.New("dbName cannot be empty. tag: " + w.w.Tag)
 	}
 	if len(table) == 0 {
-		return errors.New("table cannot be empty. tag: " + this.w.Tag)
+		return errors.New("table cannot be empty. tag: " + w.w.Tag)
 	}
 
 	var dsn string
@@ -81,20 +81,20 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 	if err != nil {
 		return err
 	}
-	if err = this.w.VerifyH24(uint64(lastInsertedID)); err != nil {
+	if err = w.w.VerifyH24(uint64(lastInsertedID)); err != nil {
 		return err
 	}
 
-	this.w.Reset(uint64(lastInsertedID) << 40)
+	w.w.Reset(uint64(lastInsertedID) << 40)
 
-	this.w.Lock()
-	defer this.w.Unlock()
+	w.w.Lock()
+	defer w.w.Unlock()
 
-	if this.w.Renew != nil {
+	if w.w.Renew != nil {
 		return nil
 	}
-	this.w.Renew = func() error {
-		return this.LoadH24FromMysql(addr, user, pass, dbName, table)
+	w.w.Renew = func() error {
+		return w.LoadH24FromMysql(addr, user, pass, dbName, table)
 	}
 
 	return nil

@@ -29,54 +29,54 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 	return w
 }
 
-func (this *WUID) Next() uint64 {
-	x := atomic.AddUint64(&this.N, 1)
+func (w *WUID) Next() uint64 {
+	x := atomic.AddUint64(&w.N, 1)
 	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
-		this.Lock()
-		renew := this.Renew
-		this.Unlock()
+		w.Lock()
+		renew := w.Renew
+		w.Unlock()
 
 		go func() {
 			defer func() {
-				if r := recover(); r != nil && this.Logger != nil {
-					this.Logger.Warn(fmt.Sprintf("[wuid] panic. tag: %s, reason: %+v", this.Tag, r))
+				if r := recover(); r != nil && w.Logger != nil {
+					w.Logger.Warn(fmt.Sprintf("[wuid] panic. tag: %s, reason: %+v", w.Tag, r))
 				}
 			}()
 
 			err := renew()
-			if this.Logger == nil {
+			if w.Logger == nil {
 				return
 			}
 			if err != nil {
-				this.Logger.Warn(fmt.Sprintf("[wuid] renew failed. tag: %s, reason: %s", this.Tag, err.Error()))
+				w.Logger.Warn(fmt.Sprintf("[wuid] renew failed. tag: %s, reason: %s", w.Tag, err.Error()))
 			} else {
-				this.Logger.Info(fmt.Sprintf("[wuid] renew succeeded. tag: %s", this.Tag))
+				w.Logger.Info(fmt.Sprintf("[wuid] renew succeeded. tag: %s", w.Tag))
 			}
 		}()
 	}
 	return x
 }
 
-func (this *WUID) Reset(n uint64) {
-	if this.Section == 0 {
-		atomic.StoreUint64(&this.N, n)
+func (w *WUID) Reset(n uint64) {
+	if w.Section == 0 {
+		atomic.StoreUint64(&w.N, n)
 	} else {
-		atomic.StoreUint64(&this.N, n&0x0FFFFFFFFFFFFFFF|uint64(this.Section)<<60)
+		atomic.StoreUint64(&w.N, n&0x0FFFFFFFFFFFFFFF|uint64(w.Section)<<60)
 	}
 }
 
-func (this *WUID) VerifyH24(h24 uint64) error {
+func (w *WUID) VerifyH24(h24 uint64) error {
 	if h24 == 0 {
-		return errors.New("the h24 should not be 0. tag: " + this.Tag)
+		return errors.New("the h24 should not be 0. tag: " + w.Tag)
 	}
 
-	if this.Section == 0 {
+	if w.Section == 0 {
 		if h24 > 0xFFFFFF {
-			return errors.New("the h24 should not exceed 0xFFFFFF. tag: " + this.Tag)
+			return errors.New("the h24 should not exceed 0xFFFFFF. tag: " + w.Tag)
 		}
 	} else {
 		if h24 > 0x0FFFFF {
-			return errors.New("the h20 should not exceed 0x0FFFFF. tag: " + this.Tag)
+			return errors.New("the h20 should not exceed 0x0FFFFF. tag: " + w.Tag)
 		}
 	}
 
