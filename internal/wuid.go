@@ -8,10 +8,13 @@ import (
 )
 
 const (
+	// CriticalValue indicates when the low 40 bits are about to run out
 	CriticalValue uint64 = (1 << 40) * 8 / 10
+	// RenewInterval indicates how often renew retries are performed
 	RenewInterval uint64 = 0x01FFFFFFFF
 )
 
+// WUID is for internal use only.
 type WUID struct {
 	sync.Mutex
 	Section uint8
@@ -21,6 +24,7 @@ type WUID struct {
 	Renew   func() error
 }
 
+// NewWUID is for internal use only.
 func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 	w := &WUID{Tag: tag, Logger: logger}
 	for _, opt := range opts {
@@ -29,6 +33,7 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 	return w
 }
 
+// Next is for internal use only.
 func (w *WUID) Next() uint64 {
 	x := atomic.AddUint64(&w.N, 1)
 	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
@@ -57,6 +62,7 @@ func (w *WUID) Next() uint64 {
 	return x
 }
 
+// Reset is for internal use only.
 func (w *WUID) Reset(n uint64) {
 	if w.Section == 0 {
 		atomic.StoreUint64(&w.N, n)
@@ -65,6 +71,7 @@ func (w *WUID) Reset(n uint64) {
 	}
 }
 
+// VerifyH24 is for internal use only.
 func (w *WUID) VerifyH24(h24 uint64) error {
 	if h24 == 0 {
 		return errors.New("the h24 should not be 0. tag: " + w.Tag)
@@ -83,13 +90,16 @@ func (w *WUID) VerifyH24(h24 uint64) error {
 	return nil
 }
 
+// Logger is for internal use only.
 type Logger interface {
 	Info(args ...interface{})
 	Warn(args ...interface{})
 }
 
+// Option is for internal use only.
 type Option func(*WUID)
 
+// WithSection is for internal use only.
 func WithSection(section uint8) Option {
 	if section == 0 || section >= 16 {
 		panic("section must be in between [1, 15]")
