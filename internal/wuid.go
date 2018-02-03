@@ -44,7 +44,7 @@ func (me *WUID) Next() uint64 {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil && me.Logger != nil {
-					me.Logger.Warn(fmt.Sprintf("[wuid] panic. tag: %s, reason: %+v", me.Tag, r))
+					me.Logger.Warn(fmt.Sprintf("[wuid] panic, renew failed. tag: %s, reason: %+v", me.Tag, r))
 				}
 			}()
 
