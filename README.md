@@ -1,5 +1,5 @@
 # Overview
-- WUID is a unique number generator, but not a UUID implementation.
+- WUID is a unique number generator, but it is not a UUID implementation.
 - WUID is **10-135** times faster than UUID and **4600** times faster than generating unique numbers with Redis.
 - WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store. By now, Redis, MySQL, and MongoDB are supported.
 
@@ -126,6 +126,7 @@ You can specify a custom section ID for the generated numbers with `wuid.WithSec
 
 # Best practices
 - Use different keys/tables/docs for different purposes.
+- Pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed", which means the low 40 bits are about to run out within hours or thousands of hours, and WUID failed to get a new number for the high 24 bits from your data store.
 
 # Special thanks
 - [dustinfog](https://github.com/dustinfog)
