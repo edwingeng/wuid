@@ -122,11 +122,11 @@ CREATE TABLE `wuid` (
 ```
 
 # Section ID
-You can specify a custom section ID for the generated numbers with `wuid.WithSection` when you call `wuid.NewWUID`. The section ID must be in between `[1, 15]`. It occupies the highest 4 bits of the numbers.
+You can specify a custom section ID for the generated numbers with `wuid.WithSection` when you call `wuid.NewWUID`. The section ID must be in between `[1, 15]`. It occupies the highest 4 bits of the generated numbers.
 
 # Best practices
 - Use different keys/tables/docs for different purposes.
-- Pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed", which means the low 40 bits are about to run out within hours or hundreds of hours, and WUID failed to get a new number for the high 24 bits from your data store.
+- Pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed", which means that the low 40 bits are about to run out in hours or hundreds of hours, and WUID failed to get a new number from your data store.
 
 # Special thanks
 - [dustinfog](https://github.com/dustinfog)
