@@ -75,6 +75,18 @@ func (me *simpleLogger) Warn(args ...interface{}) {
 	me.numWarn++
 }
 
+func TestWUID_Next_Panic(t *testing.T) {
+	defer func() {
+		_ = recover()
+	}()
+
+	g := NewWUID("default", nil)
+	atomic.StoreUint64(&g.N, DangerLine)
+	g.Next()
+
+	t.Fatal("should not be here")
+}
+
 func TestWUID_Next_Renew(t *testing.T) {
 	logger := &simpleLogger{}
 	g := NewWUID("default", logger)
