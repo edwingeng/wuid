@@ -33,3 +33,5 @@ go tool vet -all -shadow=true bench internal mongo mysql redis
 
 errcheck github.com/edwingeng/wuid/... \
     | ag -v '[ \t]*defer'
+
+golint bench callback internal mongo mysql redis

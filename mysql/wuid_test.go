@@ -116,7 +116,7 @@ func TestWithSection(t *testing.T) {
 func Example() {
 	// Setup
 	g := NewWUID("default", nil)
-	g.LoadH24FromMysql("127.0.0.1:3306", "root", "", "test", "wuid")
+	_ = g.LoadH24FromMysql("127.0.0.1:3306", "root", "", "test", "wuid")
 
 	// Generate
 	for i := 0; i < 10; i++ {

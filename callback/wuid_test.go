@@ -97,7 +97,7 @@ func TestWUID_LoadH24WithCallback_Same(t *testing.T) {
 
 func Example() {
 	g := NewWUID("default", nil)
-	g.LoadH24WithCallback(func() (uint64, error) {
+	_ = g.LoadH24WithCallback(func() (uint64, error) {
 		resp, err := http.Get("https://stackoverflow.com/")
 		if resp != nil {
 			defer resp.Body.Close()

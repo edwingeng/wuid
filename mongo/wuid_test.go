@@ -116,7 +116,7 @@ func TestWithSection(t *testing.T) {
 func Example() {
 	// Setup
 	g := NewWUID("default", nil)
-	g.LoadH24FromMongo("127.0.0.1:27017", "", "", "test", "foo", "wuid")
+	_ = g.LoadH24FromMongo("127.0.0.1:27017", "", "", "test", "foo", "wuid")
 
 	// Generate
 	for i := 0; i < 10; i++ {
