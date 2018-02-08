@@ -29,9 +29,11 @@ function printUsage() {
     [[ $colorful -eq 0 ]] && tput setaf 7
 }
 
-go tool vet -all -shadow=true bench internal mongo mysql redis
+dirs='bench callback internal mongo mysql redis'
+
+go tool vet -all -shadow=true $dirs
 
 errcheck github.com/edwingeng/wuid/... \
     | ag -v '[ \t]*defer'
 
-golint bench callback internal mongo mysql redis
+golint $dirs
