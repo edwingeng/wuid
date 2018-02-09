@@ -66,7 +66,7 @@ func TestWUID_LoadH24FromMongo_UserPass(t *testing.T) {
 	err = g.LoadH24FromMongo(addr, "wuid", "abc123", dbName, coll, docID)
 	if err != nil {
 		if strings.Contains(err.Error(), "Authentication failed") {
-			t.Log("you need to create a user in your MongoDB. username: wuid, password: abc123")
+			t.Log("you need to create a user in your Mongo. username: wuid, password: abc123")
 		} else {
 			t.Fatal(err)
 		}

@@ -36,31 +36,31 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 }
 
 // Next is for internal use only.
-func (me *WUID) Next() uint64 {
-	x := atomic.AddUint64(&me.N, 1)
+func (ego *WUID) Next() uint64 {
+	x := atomic.AddUint64(&ego.N, 1)
 	if x&0xFFFFFFFFFF >= DangerLine {
 		panic(errors.New("[wuid] the low 40 bits are about to run out"))
 	}
 	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
-		me.Lock()
-		renew := me.Renew
-		me.Unlock()
+		ego.Lock()
+		renew := ego.Renew
+		ego.Unlock()
 
 		go func() {
 			defer func() {
-				if r := recover(); r != nil && me.Logger != nil {
-					me.Logger.Warn(fmt.Sprintf("[wuid] panic, renew failed. tag: %s, reason: %+v", me.Tag, r))
+				if r := recover(); r != nil && ego.Logger != nil {
+					ego.Logger.Warn(fmt.Sprintf("[wuid] panic, renew failed. tag: %s, reason: %+v", ego.Tag, r))
 				}
 			}()
 
 			err := renew()
-			if me.Logger == nil {
+			if ego.Logger == nil {
 				return
 			}
 			if err != nil {
-				me.Logger.Warn(fmt.Sprintf("[wuid] renew failed. tag: %s, reason: %s", me.Tag, err.Error()))
+				ego.Logger.Warn(fmt.Sprintf("[wuid] renew failed. tag: %s, reason: %s", ego.Tag, err.Error()))
 			} else {
-				me.Logger.Info(fmt.Sprintf("[wuid] renew succeeded. tag: %s", me.Tag))
+				ego.Logger.Info(fmt.Sprintf("[wuid] renew succeeded. tag: %s", ego.Tag))
 			}
 		}()
 	}
@@ -68,27 +68,27 @@ func (me *WUID) Next() uint64 {
 }
 
 // Reset is for internal use only.
-func (me *WUID) Reset(n uint64) {
-	if me.Section == 0 {
-		atomic.StoreUint64(&me.N, n)
+func (ego *WUID) Reset(n uint64) {
+	if ego.Section == 0 {
+		atomic.StoreUint64(&ego.N, n)
 	} else {
-		atomic.StoreUint64(&me.N, n&0x0FFFFFFFFFFFFFFF|uint64(me.Section)<<60)
+		atomic.StoreUint64(&ego.N, n&0x0FFFFFFFFFFFFFFF|uint64(ego.Section)<<60)
 	}
 }
 
 // VerifyH24 is for internal use only.
-func (me *WUID) VerifyH24(h24 uint64) error {
+func (ego *WUID) VerifyH24(h24 uint64) error {
 	if h24 == 0 {
-		return errors.New("the h24 should not be 0. tag: " + me.Tag)
+		return errors.New("the h24 should not be 0. tag: " + ego.Tag)
 	}
 
-	if me.Section == 0 {
+	if ego.Section == 0 {
 		if h24 > 0xFFFFFF {
-			return errors.New("the h24 should not exceed 0xFFFFFF. tag: " + me.Tag)
+			return errors.New("the h24 should not exceed 0xFFFFFF. tag: " + ego.Tag)
 		}
 	} else {
 		if h24 > 0x0FFFFF {
-			return errors.New("the h20 should not exceed 0x0FFFFF. tag: " + me.Tag)
+			return errors.New("the h20 should not exceed 0x0FFFFF. tag: " + ego.Tag)
 		}
 	}
 
