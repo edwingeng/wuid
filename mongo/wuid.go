@@ -108,6 +108,11 @@ func (ego *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, doc
 	return nil
 }
 
+// RenewNow reacquires the high 24 bits from your data store immediately
+func (ego *WUID) RenewNow() error {
+	return ego.w.RenewNow()
+}
+
 // Option should never be used directly.
 type Option internal.Option
 

@@ -100,6 +100,11 @@ func (ego *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error 
 	return nil
 }
 
+// RenewNow reacquires the high 24 bits from your data store immediately
+func (ego *WUID) RenewNow() error {
+	return ego.w.RenewNow()
+}
+
 // Option should never be used directly.
 type Option internal.Option
 

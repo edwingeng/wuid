@@ -42,10 +42,6 @@ func (ego *WUID) Next() uint64 {
 		panic(errors.New("[wuid] the low 40 bits are about to run out"))
 	}
 	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
-		ego.Lock()
-		renew := ego.Renew
-		ego.Unlock()
-
 		go func() {
 			defer func() {
 				if r := recover(); r != nil && ego.Logger != nil {
@@ -53,7 +49,8 @@ func (ego *WUID) Next() uint64 {
 				}
 			}()
 
-			err := renew()
+			err := ego.RenewNow()
+
 			if ego.Logger == nil {
 				return
 			}
@@ -65,6 +62,15 @@ func (ego *WUID) Next() uint64 {
 		}()
 	}
 	return x
+}
+
+// RenewNow reacquires the high 24 bits from your data store immediately
+func (ego *WUID) RenewNow() error {
+	ego.Lock()
+	renew := ego.Renew
+	ego.Unlock()
+
+	return renew()
 }
 
 // Reset is for internal use only.
