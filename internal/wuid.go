@@ -3,6 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 )
@@ -28,7 +29,12 @@ type WUID struct {
 
 // NewWUID is for internal use only.
 func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
-	w := &WUID{Tag: tag, Logger: logger}
+	w := &WUID{Tag: tag}
+	if logger != nil {
+		w.Logger = logger
+	} else {
+		w.Logger = defaultLogger{}
+	}
 	for _, opt := range opts {
 		opt(w)
 	}
@@ -44,16 +50,12 @@ func (ego *WUID) Next() uint64 {
 	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
 		go func() {
 			defer func() {
-				if r := recover(); r != nil && ego.Logger != nil {
+				if r := recover(); r != nil {
 					ego.Logger.Warn(fmt.Sprintf("[wuid] panic, renew failed. tag: %s, reason: %+v", ego.Tag, r))
 				}
 			}()
 
 			err := ego.RenewNow()
-
-			if ego.Logger == nil {
-				return
-			}
 			if err != nil {
 				ego.Logger.Warn(fmt.Sprintf("[wuid] renew failed. tag: %s, reason: %s", ego.Tag, err.Error()))
 			} else {
@@ -105,6 +107,16 @@ func (ego *WUID) VerifyH24(h24 uint64) error {
 type Logger interface {
 	Info(args ...interface{})
 	Warn(args ...interface{})
+}
+
+type defaultLogger struct{}
+
+func (l defaultLogger) Info(args ...interface{}) {
+	log.Println(args...)
+}
+
+func (l defaultLogger) Warn(args ...interface{}) {
+	log.Println(args...)
 }
 
 // Option is for internal use only.

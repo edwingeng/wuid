@@ -10,9 +10,16 @@ import (
 	"testing"
 )
 
+type simpleLogger struct{}
+
+func (ego *simpleLogger) Info(args ...interface{}) {}
+func (ego *simpleLogger) Warn(args ...interface{}) {}
+
+var sl = &simpleLogger{}
+
 func TestWUID_LoadH24WithCallback_Error(t *testing.T) {
 	var err error
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	err = g.LoadH24WithCallback(nil)
 	if err == nil {
 		t.Fatal("LoadH24WithCallback should fail when cb is nil")
@@ -39,7 +46,7 @@ func TestWUID_LoadH24WithCallback(t *testing.T) {
 		return atomic.AddUint64(&h24, 1), nil
 	}
 
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
 		err := g.LoadH24WithCallback(cb)
 		if err != nil {
@@ -61,7 +68,7 @@ func TestWUID_LoadH24WithCallback_Section(t *testing.T) {
 		return atomic.AddUint64(&h24, 1), nil
 	}
 
-	g := NewWUID("default", nil, WithSection(1))
+	g := NewWUID("default", sl, WithSection(1))
 	for i := 0; i < 1000; i++ {
 		err := g.LoadH24WithCallback(cb)
 		if err != nil {
@@ -82,13 +89,13 @@ func TestWUID_LoadH24WithCallback_Same(t *testing.T) {
 		return 100, nil
 	}
 
-	g1 := NewWUID("default", nil)
+	g1 := NewWUID("default", sl)
 	_ = g1.LoadH24WithCallback(cb)
 	if err := g1.LoadH24WithCallback(cb); err == nil {
 		t.Fatal("LoadH24WithCallback should return an error")
 	}
 
-	g2 := NewWUID("default", nil, WithSection(1))
+	g2 := NewWUID("default", sl, WithSection(1))
 	_ = g2.LoadH24WithCallback(cb)
 	if err := g2.LoadH24WithCallback(cb); err == nil {
 		t.Fatal("LoadH24WithCallback should return an error")

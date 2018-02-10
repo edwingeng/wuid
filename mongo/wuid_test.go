@@ -11,13 +11,20 @@ import (
 	"github.com/edwingeng/wuid/internal"
 )
 
+type simpleLogger struct{}
+
+func (ego *simpleLogger) Info(args ...interface{}) {}
+func (ego *simpleLogger) Warn(args ...interface{}) {}
+
+var sl = &simpleLogger{}
+
 func getMongoConfig() (string, string, string, string, string, string) {
 	return "127.0.0.1:27017", "", "", "test", "foo", "wuid"
 }
 
 func TestWUID_LoadH24FromMongo(t *testing.T) {
 	var nextValue uint64
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
 		err := g.LoadH24FromMongo(getMongoConfig())
 		if err != nil {
@@ -38,7 +45,7 @@ func TestWUID_LoadH24FromMongo(t *testing.T) {
 }
 
 func TestWUID_LoadH24FromMongo_Error(t *testing.T) {
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	addr, user, pass, dbName, coll, docID := getMongoConfig()
 
 	if g.LoadH24FromMongo("", user, pass, dbName, coll, docID) == nil {
@@ -61,7 +68,7 @@ func TestWUID_LoadH24FromMongo_Error(t *testing.T) {
 
 func TestWUID_LoadH24FromMongo_UserPass(t *testing.T) {
 	var err error
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	addr, _, _, dbName, coll, docID := getMongoConfig()
 	err = g.LoadH24FromMongo(addr, "wuid", "abc123", dbName, coll, docID)
 	if err != nil {
@@ -78,7 +85,7 @@ func TestWUID_LoadH24FromMongo_UserPass(t *testing.T) {
 }
 
 func TestWUID_Next_Renew(t *testing.T) {
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	err := g.LoadH24FromMongo(getMongoConfig())
 	if err != nil {
 		t.Fatal(err)
@@ -103,7 +110,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 }
 
 func TestWithSection(t *testing.T) {
-	g := NewWUID("default", nil, WithSection(15))
+	g := NewWUID("default", sl, WithSection(15))
 	err := g.LoadH24FromMongo(getMongoConfig())
 	if err != nil {
 		t.Fatal(err)

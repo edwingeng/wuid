@@ -81,11 +81,13 @@ func (ego *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error 
 	if err != nil {
 		return err
 	}
-	if err = ego.w.VerifyH24(uint64(lastInsertedID)); err != nil {
+	h24 := uint64(lastInsertedID)
+	if err = ego.w.VerifyH24(h24); err != nil {
 		return err
 	}
 
-	ego.w.Reset(uint64(lastInsertedID) << 40)
+	ego.w.Reset(h24 << 40)
+	ego.w.Logger.Info(fmt.Sprintf("[wuid] new h24: %d", h24))
 
 	ego.w.Lock()
 	defer ego.w.Unlock()

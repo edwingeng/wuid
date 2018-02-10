@@ -11,13 +11,20 @@ import (
 	"github.com/edwingeng/wuid/internal"
 )
 
+type simpleLogger struct{}
+
+func (ego *simpleLogger) Info(args ...interface{}) {}
+func (ego *simpleLogger) Warn(args ...interface{}) {}
+
+var sl = &simpleLogger{}
+
 func getMysqlConfig() (string, string, string, string, string) {
 	return "127.0.0.1:3306", "root", "", "test", "wuid"
 }
 
 func TestWUID_LoadH24FromMysql(t *testing.T) {
 	var nextValue uint64
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
 		err := g.LoadH24FromMysql(getMysqlConfig())
 		if err != nil {
@@ -38,7 +45,7 @@ func TestWUID_LoadH24FromMysql(t *testing.T) {
 }
 
 func TestWUID_LoadH24FromMysql_Error(t *testing.T) {
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	addr, user, pass, dbName, table := getMysqlConfig()
 
 	if g.LoadH24FromMysql("", user, pass, dbName, table) == nil {
@@ -61,7 +68,7 @@ func TestWUID_LoadH24FromMysql_Error(t *testing.T) {
 
 func TestWUID_LoadH24FromMysql_UserPass(t *testing.T) {
 	var err error
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	addr, _, _, dbName, table := getMysqlConfig()
 	err = g.LoadH24FromMysql(addr, "wuid", "abc123", dbName, table)
 	if err != nil {
@@ -78,7 +85,7 @@ func TestWUID_LoadH24FromMysql_UserPass(t *testing.T) {
 }
 
 func TestWUID_Next_Renew(t *testing.T) {
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	err := g.LoadH24FromMysql(getMysqlConfig())
 	if err != nil {
 		t.Fatal(err)
@@ -103,7 +110,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 }
 
 func TestWithSection(t *testing.T) {
-	g := NewWUID("default", nil, WithSection(15))
+	g := NewWUID("default", sl, WithSection(15))
 	err := g.LoadH24FromMysql(getMysqlConfig())
 	if err != nil {
 		t.Fatal(err)

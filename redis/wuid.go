@@ -9,6 +9,7 @@ package wuid
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/edwingeng/wuid/internal"
 	"github.com/go-redis/redis"
@@ -58,15 +59,17 @@ func (ego *WUID) LoadH24FromRedis(addr, pass, key string) error {
 	})
 	defer client.Close()
 
-	h24, err := client.Incr(key).Result()
+	n, err := client.Incr(key).Result()
 	if err != nil {
 		return err
 	}
-	if err = ego.w.VerifyH24(uint64(h24)); err != nil {
+	h24 := uint64(n)
+	if err = ego.w.VerifyH24(h24); err != nil {
 		return err
 	}
 
-	ego.w.Reset(uint64(h24) << 40)
+	ego.w.Reset(h24 << 40)
+	ego.w.Logger.Info(fmt.Sprintf("[wuid] new h24: %d", h24))
 
 	ego.w.Lock()
 	defer ego.w.Unlock()

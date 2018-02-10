@@ -9,6 +9,7 @@ package wuid
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/edwingeng/wuid/internal"
@@ -89,11 +90,13 @@ func (ego *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, doc
 	if err != nil {
 		return err
 	}
-	if err = ego.w.VerifyH24(uint64(m["n"].(int))); err != nil {
+	h24 := uint64(m["n"].(int))
+	if err = ego.w.VerifyH24(h24); err != nil {
 		return err
 	}
 
-	ego.w.Reset(uint64(m["n"].(int)) << 40)
+	ego.w.Reset(h24 << 40)
+	ego.w.Logger.Info(fmt.Sprintf("[wuid] new h24: %d", h24))
 
 	ego.w.Lock()
 	defer ego.w.Unlock()

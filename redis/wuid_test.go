@@ -11,6 +11,13 @@ import (
 	"github.com/go-redis/redis"
 )
 
+type simpleLogger struct{}
+
+func (ego *simpleLogger) Info(args ...interface{}) {}
+func (ego *simpleLogger) Warn(args ...interface{}) {}
+
+var sl = &simpleLogger{}
+
 func getRedisConfig() (string, string, string) {
 	return "127.0.0.1:6379", "", "wuid"
 }
@@ -30,7 +37,7 @@ func TestWUID_LoadH24FromRedis(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
 		err = g.LoadH24FromRedis(getRedisConfig())
 		if err != nil {
@@ -47,7 +54,7 @@ func TestWUID_LoadH24FromRedis(t *testing.T) {
 }
 
 func TestWUID_LoadH24FromRedis_Error(t *testing.T) {
-	g := NewWUID("default", nil)
+	g := NewWUID("default", sl)
 	addr, pass, key := getRedisConfig()
 
 	if g.LoadH24FromRedis("", pass, key) == nil {
@@ -88,7 +95,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 }
 
 func TestWithSection(t *testing.T) {
-	g := NewWUID("default", nil, WithSection(15))
+	g := NewWUID("default", sl, WithSection(15))
 	err := g.LoadH24FromRedis(getRedisConfig())
 	if err != nil {
 		t.Fatal(err)
