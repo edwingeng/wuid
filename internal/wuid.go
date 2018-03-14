@@ -45,21 +45,21 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 func (ego *WUID) Next() uint64 {
 	x := atomic.AddUint64(&ego.N, 1)
 	if x&0xFFFFFFFFFF >= DangerLine {
-		panic(errors.New("[wuid] the low 40 bits are about to run out"))
+		panic(errors.New("<wuid> the low 40 bits are about to run out"))
 	}
 	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					ego.Logger.Warn(fmt.Sprintf("[wuid] panic, renew failed. tag: %s, reason: %+v", ego.Tag, r))
+					ego.Logger.Warn(fmt.Sprintf("<wuid> panic, renew failed. tag: %s, reason: %+v", ego.Tag, r))
 				}
 			}()
 
 			err := ego.RenewNow()
 			if err != nil {
-				ego.Logger.Warn(fmt.Sprintf("[wuid] renew failed. tag: %s, reason: %s", ego.Tag, err.Error()))
+				ego.Logger.Warn(fmt.Sprintf("<wuid> renew failed. tag: %s, reason: %s", ego.Tag, err.Error()))
 			} else {
-				ego.Logger.Info(fmt.Sprintf("[wuid] renew succeeded. tag: %s", ego.Tag))
+				ego.Logger.Info(fmt.Sprintf("<wuid> renew succeeded. tag: %s", ego.Tag))
 			}
 		}()
 	}

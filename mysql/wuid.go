@@ -87,7 +87,7 @@ func (ego *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error 
 	}
 
 	ego.w.Reset(h24 << 40)
-	ego.w.Logger.Info(fmt.Sprintf("[wuid] new h24: %d", h24))
+	ego.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d", h24))
 
 	ego.w.Lock()
 	defer ego.w.Unlock()

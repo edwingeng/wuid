@@ -70,7 +70,7 @@ func (ego *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 	}
 
 	ego.w.Reset(h24 << 40)
-	ego.w.Logger.Info(fmt.Sprintf("[wuid] new h24: %d", h24))
+	ego.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d", h24))
 
 	ego.w.Lock()
 	defer ego.w.Unlock()
