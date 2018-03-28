@@ -11,12 +11,19 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+type simpleLogger struct{}
+
+func (this *simpleLogger) Info(args ...interface{}) {}
+func (this *simpleLogger) Warn(args ...interface{}) {}
+
+var sl = &simpleLogger{}
+
 func getRedisConfig() (string, string, string) {
 	return "127.0.0.1:6379", "", "wuid"
 }
 
 func BenchmarkWUID(b *testing.B) {
-	g := wuid.NewWUID("default", nil)
+	g := wuid.NewWUID("default", sl)
 	err := g.LoadH24FromRedis(getRedisConfig())
 	if err != nil {
 		b.Fatal(err)
