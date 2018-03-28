@@ -12,8 +12,8 @@ import (
 
 type simpleLogger struct{}
 
-func (ego *simpleLogger) Info(args ...interface{}) {}
-func (ego *simpleLogger) Warn(args ...interface{}) {}
+func (this *simpleLogger) Info(args ...interface{}) {}
+func (this *simpleLogger) Warn(args ...interface{}) {}
 
 var sl = &simpleLogger{}
 

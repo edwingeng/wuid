@@ -61,18 +61,18 @@ type simpleLogger struct {
 	numWarn int
 }
 
-func (ego *simpleLogger) Info(args ...interface{}) {
+func (this *simpleLogger) Info(args ...interface{}) {
 	str := "INFO\t"
 	str += fmt.Sprint(args...)
 	log.Println(str)
-	ego.numInfo++
+	this.numInfo++
 }
 
-func (ego *simpleLogger) Warn(args ...interface{}) {
+func (this *simpleLogger) Warn(args ...interface{}) {
 	str := "WARN\t"
 	str += fmt.Sprint(args...)
 	log.Println(str)
-	ego.numWarn++
+	this.numWarn++
 }
 
 func TestWUID_Next_Panic(t *testing.T) {

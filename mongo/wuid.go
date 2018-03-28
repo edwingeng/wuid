@@ -41,30 +41,30 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 }
 
 // Next returns the next unique number.
-func (ego *WUID) Next() uint64 {
-	return ego.w.Next()
+func (this *WUID) Next() uint64 {
+	return this.w.Next()
 }
 
 // LoadH24FromMongo adds 1 to a specific number in your MongoDB, fetches the new value,
 // and then sets it as the high 24 bits of the unique numbers that Next generates.
-func (ego *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docID string) error {
-	return ego.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID, 3*time.Second)
+func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docID string) error {
+	return this.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID, 3*time.Second)
 }
 
 // LoadH24FromMongoWithTimeout adds 1 to a specific number in your MongoDB, fetches the new value,
 // and then sets it as the high 24 bits of the unique numbers that Next generates.
-func (ego *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID string, dialTimeout time.Duration) error {
+func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID string, dialTimeout time.Duration) error {
 	if len(addr) == 0 {
-		return errors.New("addr cannot be empty. tag: " + ego.w.Tag)
+		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(dbName) == 0 {
-		return errors.New("dbName cannot be empty. tag: " + ego.w.Tag)
+		return errors.New("dbName cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(coll) == 0 {
-		return errors.New("coll cannot be empty. tag: " + ego.w.Tag)
+		return errors.New("coll cannot be empty. tag: " + this.w.Tag)
 	}
 	if len(docID) == 0 {
-		return errors.New("docID cannot be empty. tag: " + ego.w.Tag)
+		return errors.New("docID cannot be empty. tag: " + this.w.Tag)
 	}
 
 	var url = "mongodb://" + addr + "/" + coll
@@ -91,29 +91,29 @@ func (ego *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, doc
 		return err
 	}
 	h24 := uint64(m["n"].(int))
-	if err = ego.w.VerifyH24(h24); err != nil {
+	if err = this.w.VerifyH24(h24); err != nil {
 		return err
 	}
 
-	ego.w.Reset(h24 << 40)
-	ego.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d", h24))
+	this.w.Reset(h24 << 40)
+	this.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d", h24))
 
-	ego.w.Lock()
-	defer ego.w.Unlock()
+	this.w.Lock()
+	defer this.w.Unlock()
 
-	if ego.w.Renew != nil {
+	if this.w.Renew != nil {
 		return nil
 	}
-	ego.w.Renew = func() error {
-		return ego.LoadH24FromMongo(addr, user, pass, dbName, coll, docID)
+	this.w.Renew = func() error {
+		return this.LoadH24FromMongo(addr, user, pass, dbName, coll, docID)
 	}
 
 	return nil
 }
 
 // RenewNow reacquires the high 24 bits from your data store immediately
-func (ego *WUID) RenewNow() error {
-	return ego.w.RenewNow()
+func (this *WUID) RenewNow() error {
+	return this.w.RenewNow()
 }
 
 // Option should never be used directly.

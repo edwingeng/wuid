@@ -42,8 +42,8 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 }
 
 // Next is for internal use only.
-func (ego *WUID) Next() uint64 {
-	x := atomic.AddUint64(&ego.N, 1)
+func (this *WUID) Next() uint64 {
+	x := atomic.AddUint64(&this.N, 1)
 	if x&0xFFFFFFFFFF >= DangerLine {
 		panic(errors.New("<wuid> the low 40 bits are about to run out"))
 	}
@@ -51,15 +51,15 @@ func (ego *WUID) Next() uint64 {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					ego.Logger.Warn(fmt.Sprintf("<wuid> panic, renew failed. tag: %s, reason: %+v", ego.Tag, r))
+					this.Logger.Warn(fmt.Sprintf("<wuid> panic, renew failed. tag: %s, reason: %+v", this.Tag, r))
 				}
 			}()
 
-			err := ego.RenewNow()
+			err := this.RenewNow()
 			if err != nil {
-				ego.Logger.Warn(fmt.Sprintf("<wuid> renew failed. tag: %s, reason: %s", ego.Tag, err.Error()))
+				this.Logger.Warn(fmt.Sprintf("<wuid> renew failed. tag: %s, reason: %s", this.Tag, err.Error()))
 			} else {
-				ego.Logger.Info(fmt.Sprintf("<wuid> renew succeeded. tag: %s", ego.Tag))
+				this.Logger.Info(fmt.Sprintf("<wuid> renew succeeded. tag: %s", this.Tag))
 			}
 		}()
 	}
@@ -67,36 +67,36 @@ func (ego *WUID) Next() uint64 {
 }
 
 // RenewNow reacquires the high 24 bits from your data store immediately
-func (ego *WUID) RenewNow() error {
-	ego.Lock()
-	renew := ego.Renew
-	ego.Unlock()
+func (this *WUID) RenewNow() error {
+	this.Lock()
+	renew := this.Renew
+	this.Unlock()
 
 	return renew()
 }
 
 // Reset is for internal use only.
-func (ego *WUID) Reset(n uint64) {
-	if ego.Section == 0 {
-		atomic.StoreUint64(&ego.N, n)
+func (this *WUID) Reset(n uint64) {
+	if this.Section == 0 {
+		atomic.StoreUint64(&this.N, n)
 	} else {
-		atomic.StoreUint64(&ego.N, n&0x0FFFFFFFFFFFFFFF|uint64(ego.Section)<<60)
+		atomic.StoreUint64(&this.N, n&0x0FFFFFFFFFFFFFFF|uint64(this.Section)<<60)
 	}
 }
 
 // VerifyH24 is for internal use only.
-func (ego *WUID) VerifyH24(h24 uint64) error {
+func (this *WUID) VerifyH24(h24 uint64) error {
 	if h24 == 0 {
-		return errors.New("the h24 should not be 0. tag: " + ego.Tag)
+		return errors.New("the h24 should not be 0. tag: " + this.Tag)
 	}
 
-	if ego.Section == 0 {
+	if this.Section == 0 {
 		if h24 > 0xFFFFFF {
-			return errors.New("the h24 should not exceed 0xFFFFFF. tag: " + ego.Tag)
+			return errors.New("the h24 should not exceed 0xFFFFFF. tag: " + this.Tag)
 		}
 	} else {
 		if h24 > 0x0FFFFF {
-			return errors.New("the h20 should not exceed 0x0FFFFF. tag: " + ego.Tag)
+			return errors.New("the h20 should not exceed 0x0FFFFF. tag: " + this.Tag)
 		}
 	}
 

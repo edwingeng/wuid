@@ -36,4 +36,4 @@ go tool vet -all -shadow=true $dirs
 errcheck github.com/edwingeng/wuid/... \
     | ag -v '[ \t]*defer'
 
-golint $dirs
+golint $dirs | ag -v 'receiver name should be a reflection of its identity'

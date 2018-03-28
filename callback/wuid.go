@@ -39,16 +39,16 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 }
 
 // Next returns the next unique number.
-func (ego *WUID) Next() uint64 {
-	return ego.w.Next()
+func (this *WUID) Next() uint64 {
+	return this.w.Next()
 }
 
 // LoadH24WithCallback calls cb to get a number, and then sets it as the high 24 bits of the unique
 // numbers that Next generates.
 // The number returned by cb should look like 0x000123, not 0x0001230000000000.
-func (ego *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
+func (this *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 	if cb == nil {
-		return errors.New("cb cannot be nil. tag: " + ego.w.Tag)
+		return errors.New("cb cannot be nil. tag: " + this.w.Tag)
 	}
 
 	h24, err := cb()
@@ -56,38 +56,38 @@ func (ego *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
 		return err
 	}
 
-	if err = ego.w.VerifyH24(h24); err != nil {
+	if err = this.w.VerifyH24(h24); err != nil {
 		return err
 	}
-	if ego.w.Section == 0 {
-		if h24 == atomic.LoadUint64(&ego.w.N)>>40 {
-			return fmt.Errorf("the h24 should be a different value other than %d. tag: %s", h24, ego.w.Tag)
+	if this.w.Section == 0 {
+		if h24 == atomic.LoadUint64(&this.w.N)>>40 {
+			return fmt.Errorf("the h24 should be a different value other than %d. tag: %s", h24, this.w.Tag)
 		}
 	} else {
-		if h24 == (atomic.LoadUint64(&ego.w.N)>>40)&0x0FFFFF {
-			return fmt.Errorf("the h20 should be a different value other than %d. tag: %s", h24, ego.w.Tag)
+		if h24 == (atomic.LoadUint64(&this.w.N)>>40)&0x0FFFFF {
+			return fmt.Errorf("the h20 should be a different value other than %d. tag: %s", h24, this.w.Tag)
 		}
 	}
 
-	ego.w.Reset(h24 << 40)
-	ego.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d", h24))
+	this.w.Reset(h24 << 40)
+	this.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d", h24))
 
-	ego.w.Lock()
-	defer ego.w.Unlock()
+	this.w.Lock()
+	defer this.w.Unlock()
 
-	if ego.w.Renew != nil {
+	if this.w.Renew != nil {
 		return nil
 	}
-	ego.w.Renew = func() error {
-		return ego.LoadH24WithCallback(cb)
+	this.w.Renew = func() error {
+		return this.LoadH24WithCallback(cb)
 	}
 
 	return nil
 }
 
 // RenewNow reacquires the high 24 bits from your data store immediately
-func (ego *WUID) RenewNow() error {
-	return ego.w.RenewNow()
+func (this *WUID) RenewNow() error {
+	return this.w.RenewNow()
 }
 
 // Option should never be used directly.
