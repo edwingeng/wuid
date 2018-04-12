@@ -44,8 +44,8 @@ func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
 
-// LoadH24FromMysql adds 1 to a specific number in your MySQL, fetches the new value, and then
-// sets it as the high 24 bits of the unique numbers that Next generates.
+// LoadH24FromMysql adds 1 to a specific number in your MySQL, fetches its new value, and then
+// sets that as the high 24 bits of the unique numbers that Next generates.
 func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error {
 	if len(addr) == 0 {
 		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
