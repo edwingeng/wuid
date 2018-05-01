@@ -19,12 +19,3 @@
 # [[override]]
 #  name = "github.com/x/y"
 #  version = "2.4.0"
-
-
-[[constraint]]
-  name = "github.com/go-redis/redis"
-  version = "6.8.2"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/globalsign/mgo"

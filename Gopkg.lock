@@ -5,19 +5,34 @@
   branch = "master"
   name = "github.com/bwmarrin/snowflake"
   packages = ["."]
-  revision = "1c0147d077f16f1abd13b630743b41484616ab9a"
+  revision = "68117e6bbede4dd72d70c7a58d73348ead068509"
 
 [[projects]]
   branch = "master"
   name = "github.com/globalsign/mgo"
-  packages = [".","bson","internal/json","internal/sasl","internal/scram"]
-  revision = "896bbb89d21253a28cd5a7f8b81fe091410cb94d"
+  packages = [
+    ".",
+    "bson",
+    "internal/json",
+    "internal/sasl",
+    "internal/scram"
+  ]
+  revision = "efe0945164a7e582241f37ae8983c075f8f2e870"
 
 [[projects]]
   name = "github.com/go-redis/redis"
-  packages = [".","internal","internal/consistenthash","internal/hashtag","internal/pool","internal/proto"]
-  revision = "4021ace05686f632ff17fd824bbed229fc474cf8"
-  version = "v6.8.2"
+  packages = [
+    ".",
+    "internal",
+    "internal/consistenthash",
+    "internal/hashtag",
+    "internal/pool",
+    "internal/proto",
+    "internal/singleflight",
+    "internal/util"
+  ]
+  revision = "877867d2845fbaf86798befe410b6ceb6f5c29a3"
+  version = "v6.10.2"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -34,6 +49,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1790a523346f1b1fe775f9095909dce8c1e99ea256660f04685e69b5ab456c78"
+  inputs-digest = "72e11d4b45af3ab67934a7fb13b674af0323ecd7c123d71298670863b84ce0fb"
   solver-name = "gps-cdcl"
   solver-version = 1
