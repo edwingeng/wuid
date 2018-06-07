@@ -1,14 +1,9 @@
 package wuid
 
 import (
-	"fmt"
 	"math/rand"
-	"strings"
 	"sync/atomic"
 	"testing"
-	"time"
-
-	"github.com/edwingeng/wuid/internal"
 )
 
 type simpleLogger struct{}
@@ -18,25 +13,37 @@ func (this *simpleLogger) Warn(args ...interface{}) {}
 
 var sl = &simpleLogger{}
 
-func getMysqlConfig() (string, string, string, string, string) {
-	return "127.0.0.1:3306", "root", "password", "test", "wuid"
+type config struct {
+	host  string
+	user  string
+	pass  string
+	db    string
+	table string
 }
 
-func TestWUID_LoadH24FromMysql(t *testing.T) {
-	var nextValue uint64
+var pgc = &config{
+	host:  "localhost",
+	user:  "postgres",
+	pass:  "mysecretpassword",
+	db:    "postgres",
+	table: "wuid",
+}
+
+func TestLoadH24FromPg(t *testing.T) {
+	var nextVal uint64
 	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
-		err := g.LoadH24FromMysql(getMysqlConfig())
+		err := g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if i == 0 {
-			nextValue = atomic.LoadUint64(&g.w.N)
+			nextVal = atomic.LoadUint64(&g.w.N)
 		} else {
-			nextValue = ((nextValue >> 40) + 1) << 40
+			nextVal = ((nextVal >> 40) + 1) << 40
 		}
-		if atomic.LoadUint64(&g.w.N) != nextValue {
-			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&g.w.N), nextValue, i)
+		if atomic.LoadUint64(&g.w.N) != nextVal {
+			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&g.w.N), nextVal, i)
 		}
 		for j := 0; j < rand.Intn(10); j++ {
 			g.Next()
@@ -44,6 +51,7 @@ func TestWUID_LoadH24FromMysql(t *testing.T) {
 	}
 }
 
+/*
 func TestWUID_LoadH24FromMysql_Error(t *testing.T) {
 	g := NewWUID("default", sl)
 	addr, user, pass, dbName, table := getMysqlConfig()
@@ -130,3 +138,4 @@ func Example() {
 		fmt.Printf("%#016x\n", g.Next())
 	}
 }
+*/
