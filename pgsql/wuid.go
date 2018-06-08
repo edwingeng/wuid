@@ -12,7 +12,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edwingeng/wuid/internal"
+	"github.com/dwin/wuid/internal"
 	_ "github.com/lib/pq" // postgres driver
 )
 
@@ -47,7 +47,7 @@ func (this *WUID) Next() uint64 {
 // LoadH24FromPgWithOpts adds 1 to a specific number in your PostgreSQL, fetches its new value, and then
 // sets that as the high 24 bits of the unique numbers that Next generates.
 // See https://godoc.org/github.com/lib/pq for valid options.
-func (this *WUID) LoadH24FromPgWithOpts(host, user, pass, dbName, table, key, sslMode string, timeout int, sslCert, sslKey, sslrootcert string) error {
+func (this *WUID) LoadH24FromPgWithOpts(host string, port int, user, pass, dbName, table, sslMode string, timeout int, sslCert, sslKey, sslrootcert string) error {
 	if len(host) == 0 {
 		return errors.New("host cannot be empty. tag: " + this.w.Tag)
 	}
@@ -65,23 +65,16 @@ func (this *WUID) LoadH24FromPgWithOpts(host, user, pass, dbName, table, key, ss
 	}
 
 	// Create connection string
-	dsn := "postgres://"
-	dsn += user
-	if len(pass) > 0 {
-		dsn += ":" + fmt.Sprintf("'%s'", pass) // single quotes to handle whitespace in password
-	}
-	dsn += "@" + host
-	dsn += "/" + dbName
-	dsn += "?sslmode=" + sslMode
-	dsn += "?connect_timeout=" + fmt.Sprintf("%v", timeout)
+	dsn := fmt.Sprintf("host=%s port=%v user=%s password='%s' dbname=%s sslmode=%s connect_timeout=%v", host, port, user, pass, dbName, sslMode, timeout)
+
 	if len(sslCert) > 0 {
-		dsn += "?sslcert=" + fmt.Sprintf("'%s'", sslCert) // single quotes to handle whitespace
+		dsn += " sslcert=" + fmt.Sprintf("'%s'", sslCert) // single quotes to handle whitespace
 	}
 	if len(sslKey) > 0 {
-		dsn += "?sslkey=" + fmt.Sprintf("'%s'", sslKey) // single quotes to handle whitespace
+		dsn += " sslkey=" + fmt.Sprintf("'%s'", sslKey) // single quotes to handle whitespace
 	}
 	if len(sslrootcert) > 0 {
-		dsn += "?sslrootcert=" + fmt.Sprintf("'%s'", sslrootcert) // single quotes to handle whitespace
+		dsn += " sslrootcert=" + fmt.Sprintf("'%s'", sslrootcert) // single quotes to handle whitespace
 	}
 
 	return this.loadH24FromPg(dsn, table)
@@ -125,25 +118,11 @@ func (this *WUID) loadH24FromPg(dsn, table string) error {
 	}
 	defer db.Close()
 
-	/*
-		result, err := db.Exec(fmt.Sprintf("REPLACE INTO %s (x) VALUES (0)", table))
-		if err != nil {
-			return err
-		}
-	*/
-
 	var lastInsertedID int64
 	err = db.QueryRow(fmt.Sprintf("INSERT INTO %s (x) VALUES (0) ON CONFLICT (x) DO UPDATE SET h = %s.h + 1 returning h", table, table)).Scan(&lastInsertedID)
 	if err != nil {
 		return err
 	}
-	fmt.Println(lastInsertedID)
-	/*
-		lastInsertedID, err := result.LastInsertId()
-		if err != nil {
-			return err
-		}
-	*/
 
 	h24 := uint64(lastInsertedID)
 	if err = this.w.VerifyH24(h24); err != nil {

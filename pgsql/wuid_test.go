@@ -1,18 +1,19 @@
 package wuid
 
 import (
+	"database/sql"
+	"fmt"
 	"math/rand"
+	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
+
+	"github.com/dwin/wuid/internal"
+	_ "github.com/lib/pq" // postgres driver
 )
 
 type simpleLogger struct{}
-
-func (this *simpleLogger) Info(args ...interface{}) {}
-func (this *simpleLogger) Warn(args ...interface{}) {}
-
-var sl = &simpleLogger{}
-
 type config struct {
 	host  string
 	user  string
@@ -21,6 +22,10 @@ type config struct {
 	table string
 }
 
+func (this *simpleLogger) Info(args ...interface{}) {}
+func (this *simpleLogger) Warn(args ...interface{}) {}
+
+var sl = &simpleLogger{}
 var pgc = &config{
 	host:  "localhost",
 	user:  "postgres",
@@ -29,6 +34,23 @@ var pgc = &config{
 	table: "wuid",
 }
 
+func init() {
+	// create db table for testing
+	connStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", pgc.host, pgc.user, pgc.pass, pgc.db)
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		fmt.Println("init failed error: ", err)
+	}
+	defer db.Close()
+	_, err = db.Exec(`CREATE TABLE wuid
+		(
+			h serial NOT NULL UNIQUE,
+			x int NOT NULL PRIMARY KEY DEFAULT '0'
+		)`)
+	if err != nil {
+		fmt.Println("Table creation error: ", err)
+	}
+}
 func TestLoadH24FromPg(t *testing.T) {
 	var nextVal uint64
 	g := NewWUID("default", sl)
@@ -49,52 +71,78 @@ func TestLoadH24FromPg(t *testing.T) {
 			g.Next()
 		}
 	}
-}
 
-/*
-func TestWUID_LoadH24FromMysql_Error(t *testing.T) {
-	g := NewWUID("default", sl)
-	addr, user, pass, dbName, table := getMysqlConfig()
+	// Check connection parameter validation
 
-	if g.LoadH24FromMysql("", user, pass, dbName, table) == nil {
-		t.Fatal("addr is not properly checked")
+	if g.LoadH24FromPg("", pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table) == nil {
+		t.Fatal("host is not properly checked")
 	}
-	if g.LoadH24FromMysql(addr, "", pass, dbName, table) == nil {
+
+	if g.LoadH24FromPg(pgc.host, "", pgc.pass, pgc.db+"?sslmode=disable", pgc.table) == nil {
 		t.Fatal("user is not properly checked")
 	}
-	if g.LoadH24FromMysql(addr, user, pass, "", table) == nil {
-		t.Fatal("dbName is not properly checked")
+
+	if g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, "", pgc.table) == nil {
+		t.Fatal("db name is not properly checked")
 	}
-	if g.LoadH24FromMysql(addr, user, pass, dbName, "") == nil {
+
+	if g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", "") == nil {
 		t.Fatal("table is not properly checked")
 	}
 
-	if err := g.LoadH24FromMysql("127.0.0.1:30000", user, pass, dbName, table); err == nil {
-		t.Fatal("LoadH24FromMysql should fail when is address is invalid")
+	if g.LoadH24FromPg("127.0.0.1:30000", pgc.user, pgc.pass, pgc.db+"?sslmode=disable", "") == nil {
+		t.Fatal("LoadH24FromPg should fail when host is invalid")
 	}
+
+	fmt.Println(" - " + t.Name() + " complete - ")
 }
 
-func TestWUID_LoadH24FromMysql_UserPass(t *testing.T) {
+func TestLoadH24FromPgWithOpts(t *testing.T) {
+	// Setup
+	var nextVal uint64
+	g := NewWUID("default", sl)
+
+	// Test expected successful connection, no SSL/TLS
+	for i := 0; i < 500; i++ {
+		err := g.LoadH24FromPgWithOpts(pgc.host, 5432, pgc.user, pgc.pass, pgc.db, pgc.table, "disable", 5, "", "", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if i == 0 {
+			nextVal = atomic.LoadUint64(&g.w.N)
+		} else {
+			nextVal = ((nextVal >> 40) + 1) << 40
+		}
+		if atomic.LoadUint64(&g.w.N) != nextVal {
+			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&g.w.N), nextVal, i)
+		}
+		for j := 0; j < rand.Intn(10); j++ {
+			g.Next()
+		}
+	}
+}
+func TestWUID_LoadH24FromPg_UserPass(t *testing.T) {
 	var err error
 	g := NewWUID("default", sl)
-	addr, _, _, dbName, table := getMysqlConfig()
-	err = g.LoadH24FromMysql(addr, "wuid", "abc123", dbName, table)
+	err = g.LoadH24FromPg(pgc.host, "wuid", "abc123", pgc.db+"?sslmode=disable", pgc.table)
 	if err != nil {
-		if strings.Contains(err.Error(), "Access denied for user") {
-			t.Log("you need to create a user in your MySQL. username: wuid, password: abc123")
+		if strings.Contains(err.Error(), "authentication failed for user") {
+			t.Log("you need to create a user in your Postgres. username: wuid, password: abc123")
 		} else {
 			t.Fatal(err)
 		}
 	}
-	err = g.LoadH24FromMysql(addr, "wuid", "nopass", dbName, table)
+	err = g.LoadH24FromPg(pgc.host, "wuid", "nopass", pgc.db+"?sslmode=disable", pgc.table)
 	if err == nil {
-		t.Fatal("LoadH24FromMysql should fail when the password is incorrect")
+		t.Fatal("LoadH24FromPg should fail when the password is incorrect")
 	}
+
+	fmt.Println(" - " + t.Name() + " complete - ")
 }
 
 func TestWUID_Next_Renew(t *testing.T) {
 	g := NewWUID("default", sl)
-	err := g.LoadH24FromMysql(getMysqlConfig())
+	err := g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,27 +163,44 @@ func TestWUID_Next_Renew(t *testing.T) {
 	if n2>>40 == n1>>40 || n3>>40 == n2>>40 {
 		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>40, n2>>40, n3>>40)
 	}
+
+	fmt.Println(" - " + t.Name() + " complete - ")
 }
 
 func TestWithSection(t *testing.T) {
 	g := NewWUID("default", sl, WithSection(15))
-	err := g.LoadH24FromMysql(getMysqlConfig())
+	err := g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if g.Next()>>60 != 15 {
 		t.Fatal("WithSection does not work as expected")
 	}
+
+	fmt.Println(" - " + t.Name() + " complete - ")
 }
 
 func Example() {
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromMysql("127.0.0.1:3306", "root", "", "test", "wuid")
+	_ = g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
 
 	// Generate
 	for i := 0; i < 10; i++ {
 		fmt.Printf("%#016x\n", g.Next())
 	}
+
 }
-*/
+
+func BenchmarkLoadH24FromPg(b *testing.B) {
+	// Setup
+	g := NewWUID("default", nil)
+	_ = g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
+
+	//Generate
+	for n := 0; n < b.N; n++ {
+		g.Next()
+	}
+
+	fmt.Println(" - " + b.Name() + " complete - ")
+}
