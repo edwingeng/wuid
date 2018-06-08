@@ -9,6 +9,15 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/edwingeng/wuid"
+  packages = [
+    "internal",
+    "redis"
+  ]
+  revision = "51626ac62bf614c5071c1c796f9f3389234f6b9d"
+
+[[projects]]
+  branch = "master"
   name = "github.com/globalsign/mgo"
   packages = [
     ".",
@@ -31,14 +40,23 @@
     "internal/singleflight",
     "internal/util"
   ]
-  revision = "877867d2845fbaf86798befe410b6ceb6f5c29a3"
-  version = "v6.10.2"
+  revision = "83fb42932f6145ce52df09860384a4653d2d332a"
+  version = "v6.12.0"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
-  revision = "a0583e0143b1624142adab07e0e97fe106d99561"
-  version = "v1.3"
+  revision = "d523deb1b23d913de5bdada721a6071e71283618"
+  version = "v1.4.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid"
+  ]
+  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
 
 [[projects]]
   name = "github.com/satori/go.uuid"
@@ -46,9 +64,15 @@
   revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
   version = "v1.2.0"
 
+[[projects]]
+  name = "google.golang.org/appengine"
+  packages = ["cloudsql"]
+  revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
+  version = "v1.0.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "72e11d4b45af3ab67934a7fb13b674af0323ecd7c123d71298670863b84ce0fb"
+  inputs-digest = "019fc07334dc0db9f26653c8c715993b2e1692ed08df2c28908f57ecf5f88031"
   solver-name = "gps-cdcl"
   solver-version = 1
