@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwin/wuid/internal"
-	_ "github.com/lib/pq" // postgres driver
+	"github.com/dwin/wuid/internal" // use of internal package discouraged
+	_ "github.com/lib/pq"           // postgres driver
 )
 
 type simpleLogger struct{}
@@ -213,18 +213,6 @@ func TestWithSection(t *testing.T) {
 	}
 
 	fmt.Println(" - " + t.Name() + " complete - ")
-}
-
-func Example() {
-	// Setup
-	g := NewWUID("default", nil)
-	_ = g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db, pgc.table)
-
-	// Generate
-	for i := 0; i < 10; i++ {
-		fmt.Printf("%#016x\n", g.Next())
-	}
-
 }
 
 func BenchmarkLoadH24FromPg(b *testing.B) {

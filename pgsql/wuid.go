@@ -12,8 +12,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dwin/wuid/internal"
-	_ "github.com/lib/pq" // postgres driver
+	"github.com/dwin/wuid/internal" // use of internal package discouraged
+	_ "github.com/lib/pq"           // postgres driver
 )
 
 /*
