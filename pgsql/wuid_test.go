@@ -16,6 +16,7 @@ import (
 type simpleLogger struct{}
 type config struct {
 	host  string
+	port  int
 	user  string
 	pass  string
 	db    string
@@ -28,6 +29,7 @@ func (this *simpleLogger) Warn(args ...interface{}) {}
 var sl = &simpleLogger{}
 var pgc = &config{
 	host:  "localhost",
+	port:  5432,
 	user:  "postgres",
 	pass:  "mysecretpassword",
 	db:    "postgres",
@@ -104,7 +106,7 @@ func TestLoadH24FromPgWithOpts(t *testing.T) {
 
 	// Test expected successful connection, no SSL/TLS
 	for i := 0; i < 500; i++ {
-		err := g.LoadH24FromPgWithOpts(pgc.host, 5432, pgc.user, pgc.pass, pgc.db, pgc.table, "disable", 5, "", "", "")
+		err := g.LoadH24FromPgWithOpts(pgc.host, pgc.port, pgc.user, pgc.pass, pgc.db, pgc.table, "disable", 5, "", "", "")
 		if err != nil {
 			t.Fatal(err)
 		}

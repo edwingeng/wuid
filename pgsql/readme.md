@@ -5,6 +5,16 @@
 go get -u github.com/edwingeng/wuid/...
 ```
 
+Or choose one command from the following if you prefer dep:
+```bash
+dep ensure -add github.com/edwingeng/wuid/pgsql
+
+dep ensure -add github.com/edwingeng/wuid/redis
+dep ensure -add github.com/edwingeng/wuid/mysql
+dep ensure -add github.com/edwingeng/wuid/mongo
+dep ensure -add github.com/edwingeng/wuid/callback
+```
+
 # Usage Examples
 
 ### PostgreSQL
