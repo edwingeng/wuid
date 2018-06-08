@@ -12,7 +12,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dwin/wuid/internal"
+	"github.com/edwingeng/wuid/internal"
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 )
 

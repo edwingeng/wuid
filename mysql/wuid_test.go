@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dwin/wuid/internal"
+	"github.com/edwingeng/wuid/internal"
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 )
 
@@ -49,7 +49,7 @@ func init() {
 }
 
 func getMysqlConfig() (string, string, string, string, string) {
-	return "127.0.0.1:3306", "root", "password", "test", "wuid"
+	return "127.0.0.1:3306", "root", "", "test", "wuid"
 }
 
 func TestWUID_LoadH24FromMysql(t *testing.T) {
