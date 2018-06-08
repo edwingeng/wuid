@@ -27,8 +27,6 @@ func (this *simpleLogger) Info(args ...interface{}) {}
 func (this *simpleLogger) Warn(args ...interface{}) {}
 
 var sl = &simpleLogger{}
-
-// Test database config
 var pgc = &config{
 	host:  "localhost",
 	port:  5432,
@@ -38,7 +36,6 @@ var pgc = &config{
 	table: "wuid",
 }
 
-// Create table in test database
 func init() {
 	// create db table for testing
 	connStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", pgc.host, pgc.user, pgc.pass, pgc.db)
@@ -53,14 +50,14 @@ func init() {
 			x int NOT NULL PRIMARY KEY DEFAULT '0'
 		)`)
 	if err != nil {
-		fmt.Println("Table creation error, this is expected if table already created. error: ", err)
+		fmt.Println("Table creation error: ", err)
 	}
 }
 func TestLoadH24FromPg(t *testing.T) {
 	var nextVal uint64
 	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
-		err := g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db, pgc.table)
+		err := g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -77,19 +74,13 @@ func TestLoadH24FromPg(t *testing.T) {
 		}
 	}
 
-	// Check proper connection fail response
-	err := g.LoadH24FromPg(pgc.host, "badusername", pgc.pass, pgc.db, pgc.table)
-	if err == nil {
-		t.Fatal("Connection should fail and return error")
-	}
-
 	// Check connection parameter validation
 
-	if g.LoadH24FromPg("", pgc.user, pgc.pass, pgc.db, pgc.table) == nil {
+	if g.LoadH24FromPg("", pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table) == nil {
 		t.Fatal("host is not properly checked")
 	}
 
-	if g.LoadH24FromPg(pgc.host, "", pgc.pass, pgc.db, pgc.table) == nil {
+	if g.LoadH24FromPg(pgc.host, "", pgc.pass, pgc.db+"?sslmode=disable", pgc.table) == nil {
 		t.Fatal("user is not properly checked")
 	}
 
@@ -97,11 +88,11 @@ func TestLoadH24FromPg(t *testing.T) {
 		t.Fatal("db name is not properly checked")
 	}
 
-	if g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db, "") == nil {
+	if g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", "") == nil {
 		t.Fatal("table is not properly checked")
 	}
 
-	if g.LoadH24FromPg("127.0.0.1:30000", pgc.user, pgc.pass, pgc.db, "") == nil {
+	if g.LoadH24FromPg("127.0.0.1:30000", pgc.user, pgc.pass, pgc.db+"?sslmode=disable", "") == nil {
 		t.Fatal("LoadH24FromPg should fail when host is invalid")
 	}
 
@@ -131,35 +122,11 @@ func TestLoadH24FromPgWithOpts(t *testing.T) {
 			g.Next()
 		}
 	}
-
-	// Check connection parameter validation
-
-	if g.LoadH24FromPgWithOpts("", pgc.port, pgc.user, pgc.pass, pgc.db, pgc.table, "disable", 5, "", "", "") == nil {
-		t.Fatal("host is not properly checked")
-	}
-
-	if g.LoadH24FromPgWithOpts(pgc.host, pgc.port, "", pgc.pass, pgc.db, pgc.table, "disable", 5, "", "", "") == nil {
-		t.Fatal("user is not properly checked")
-	}
-
-	if g.LoadH24FromPgWithOpts(pgc.host, pgc.port, pgc.user, pgc.pass, "", pgc.table, "disable", 5, "", "", "") == nil {
-		t.Fatal("db name is not properly checked")
-	}
-
-	if g.LoadH24FromPgWithOpts(pgc.host, pgc.port, pgc.user, pgc.pass, pgc.db, "", "disable", 5, "", "", "") == nil {
-		t.Fatal("table is not properly checked")
-	}
-
-	if g.LoadH24FromPgWithOpts("127.0.0.1:300000", pgc.port, pgc.user, pgc.pass, pgc.db, pgc.table, "disable", 5, "", "", "") == nil {
-		t.Fatal("LoadH24FromPg should fail when host is invalid")
-	}
-
-	fmt.Println(" - " + t.Name() + " complete - ")
 }
 func TestWUID_LoadH24FromPg_UserPass(t *testing.T) {
 	var err error
 	g := NewWUID("default", sl)
-	err = g.LoadH24FromPg(pgc.host, "wuid", "abc123", pgc.db, pgc.table)
+	err = g.LoadH24FromPg(pgc.host, "wuid", "abc123", pgc.db+"?sslmode=disable", pgc.table)
 	if err != nil {
 		if strings.Contains(err.Error(), "authentication failed for user") {
 			t.Log("you need to create a user in your Postgres. username: wuid, password: abc123")
@@ -167,7 +134,7 @@ func TestWUID_LoadH24FromPg_UserPass(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	err = g.LoadH24FromPg(pgc.host, "wuid", "nopass", pgc.db, pgc.table)
+	err = g.LoadH24FromPg(pgc.host, "wuid", "nopass", pgc.db+"?sslmode=disable", pgc.table)
 	if err == nil {
 		t.Fatal("LoadH24FromPg should fail when the password is incorrect")
 	}
@@ -177,7 +144,7 @@ func TestWUID_LoadH24FromPg_UserPass(t *testing.T) {
 
 func TestWUID_Next_Renew(t *testing.T) {
 	g := NewWUID("default", sl)
-	err := g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db, pgc.table)
+	err := g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +171,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 
 func TestWithSection(t *testing.T) {
 	g := NewWUID("default", sl, WithSection(15))
-	err := g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db, pgc.table)
+	err := g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +185,7 @@ func TestWithSection(t *testing.T) {
 func Example() {
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db, pgc.table)
+	_ = g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
 
 	// Generate
 	for i := 0; i < 10; i++ {
@@ -230,7 +197,7 @@ func Example() {
 func BenchmarkLoadH24FromPg(b *testing.B) {
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db, pgc.table)
+	_ = g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db+"?sslmode=disable", pgc.table)
 
 	//Generate
 	for n := 0; n < b.N; n++ {

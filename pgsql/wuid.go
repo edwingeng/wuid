@@ -30,9 +30,6 @@ type WUID struct {
 	w *internal.WUID
 }
 
-// DefaultTimeout for db connection is 15 seconds
-const DefaultTimeout int = 15
-
 // NewWUID creates a new WUID instance.
 func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 	var opts2 []internal.Option
@@ -100,7 +97,13 @@ func (this *WUID) LoadH24FromPg(host, user, pass, dbName, table string) error {
 	}
 
 	// Create connection string
-	dsn := fmt.Sprintf("host=%s user=%s password='%s' dbname=%s connect_timeout=%v", host, user, pass, dbName, DefaultTimeout)
+	dsn := "postgres://"
+	dsn += user
+	if len(pass) > 0 {
+		dsn += ":" + pass
+	}
+	dsn += "@" + host
+	dsn += "/" + dbName
 
 	return this.loadH24FromPg(dsn, table)
 }
