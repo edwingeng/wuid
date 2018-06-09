@@ -1,6 +1,7 @@
 package wuid
 
 import (
+	"database/sql"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/edwingeng/wuid/internal"
+	_ "github.com/go-sql-driver/mysql" // mysql driver
 )
 
 type simpleLogger struct{}
@@ -17,6 +19,34 @@ func (this *simpleLogger) Info(args ...interface{}) {}
 func (this *simpleLogger) Warn(args ...interface{}) {}
 
 var sl = &simpleLogger{}
+
+func init() {
+	// Create test table
+	addr, user, pass, dbName, table := getMysqlConfig()
+
+	var dsn string
+	dsn += user
+	if len(pass) > 0 {
+		dsn += ":" + pass
+	}
+	dsn += "@tcp(" + addr + ")/" + dbName
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		fmt.Println("mysql connection error: ", err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec(`CREATE TABLE ` + fmt.Sprintf("%s.%s", dbName, table) + ` (
+		h int(10) NOT NULL AUTO_INCREMENT,
+		x tinyint(4) NOT NULL DEFAULT '0',
+		PRIMARY KEY (x),
+		UNIQUE KEY h (h)
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8;`)
+	if err != nil {
+		fmt.Println("Cannot create table error: ", err)
+	}
+}
 
 func getMysqlConfig() (string, string, string, string, string) {
 	return "127.0.0.1:3306", "root", "", "test", "wuid"
@@ -129,4 +159,20 @@ func Example() {
 	for i := 0; i < 10; i++ {
 		fmt.Printf("%#016x\n", g.Next())
 	}
+}
+
+func BenchmarkLoadH24FromMysql(b *testing.B) {
+	// Setup
+	g := NewWUID("default", nil)
+	err := g.LoadH24FromMysql(getMysqlConfig())
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	// Generate
+	for n := 0; n < b.N; n++ {
+		g.Next()
+	}
+
+	fmt.Println(" - " + b.Name() + " complete - ")
 }
