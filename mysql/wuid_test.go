@@ -160,19 +160,3 @@ func Example() {
 		fmt.Printf("%#016x\n", g.Next())
 	}
 }
-
-func BenchmarkLoadH24FromMysql(b *testing.B) {
-	// Setup
-	g := NewWUID("default", nil)
-	err := g.LoadH24FromMysql(getMysqlConfig())
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	// Generate
-	for n := 0; n < b.N; n++ {
-		g.Next()
-	}
-
-	fmt.Println(" - " + b.Name() + " complete - ")
-}
