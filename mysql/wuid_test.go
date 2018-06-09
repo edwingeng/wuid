@@ -21,7 +21,6 @@ func (this *simpleLogger) Warn(args ...interface{}) {}
 var sl = &simpleLogger{}
 
 func init() {
-	// Create test table
 	addr, user, pass, dbName, table := getMysqlConfig()
 
 	var dsn string
@@ -37,14 +36,10 @@ func init() {
 	}
 	defer db.Close()
 
-	_, err = db.Exec(`CREATE TABLE ` + fmt.Sprintf("%s.%s", dbName, table) + ` (
-		h int(10) NOT NULL AUTO_INCREMENT,
-		x tinyint(4) NOT NULL DEFAULT '0',
-		PRIMARY KEY (x),
-		UNIQUE KEY h (h)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8;`)
+	_, err = db.Exec(fmt.Sprintf("SELECT 1 FROM %s.%s LIMIT 1", dbName, table))
 	if err != nil {
-		fmt.Println("Cannot create table error: ", err)
+		format := "Table '%s.%s' doesn't exist. You can create it with github.com/edwingeng/wuid/mysql/db.sql"
+		panic(fmt.Sprintf(format, dbName, table))
 	}
 }
 
