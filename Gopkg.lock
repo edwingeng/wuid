@@ -9,15 +9,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/edwingeng/wuid"
-  packages = [
-    "internal",
-    "redis"
-  ]
-  revision = "51626ac62bf614c5071c1c796f9f3389234f6b9d"
-
-[[projects]]
-  branch = "master"
   name = "github.com/globalsign/mgo"
   packages = [
     ".",
@@ -73,6 +64,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "019fc07334dc0db9f26653c8c715993b2e1692ed08df2c28908f57ecf5f88031"
+  inputs-digest = "40dc7307b38117a22f57c1605e2bafca255e8cf0c67dc301519ff6364c0ab8a6"
   solver-name = "gps-cdcl"
   solver-version = 1
