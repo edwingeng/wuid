@@ -1,7 +1,7 @@
 # Overview
 - WUID is a unique number generator, but it is not a UUID implementation.
 - WUID is **10-135** times faster than UUID and **4600** times faster than generating unique numbers with Redis.
-- WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store. By now, Redis, MySQL, and MongoDB are supported.
+- WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store. By now, Redis, MySQL, PostgreSQL, and MongoDB are supported.
 
 # Benchmarks
 ```
@@ -20,8 +20,8 @@ BenchmarkSnowflake    5000000          244 ns/op           0 B/op          0 all
 # Features
 - Extremely fast
 - Thread-safe
-- Being unique within a data center
 - Being unique across time
+- Being unique within a data center
 - Being unique globally if all data centers share the same data store, or they use different section IDs
 - Being capable of generating 100M unique numbers in a single second
 - Auto-renew when the low 40 bits are about to run out
@@ -34,6 +34,7 @@ Or choose one command from the following if you prefer `dep`:
 ``` bash
 dep ensure -add github.com/edwingeng/wuid/redis
 dep ensure -add github.com/edwingeng/wuid/mysql
+dep ensure -add github.com/edwingeng/wuid/pgsql
 dep ensure -add github.com/edwingeng/wuid/mongo
 dep ensure -add github.com/edwingeng/wuid/callback
 ```
