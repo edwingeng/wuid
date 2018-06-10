@@ -81,7 +81,7 @@ func TestWUID_Next_Panic(t *testing.T) {
 	}()
 
 	g := NewWUID("default", nil)
-	atomic.StoreUint64(&g.N, DangerLine)
+	atomic.StoreUint64(&g.N, PanicValue)
 	g.Next()
 
 	t.Fatal("should not be here")

@@ -13,8 +13,8 @@ const (
 	CriticalValue uint64 = (1 << 40) * 80 / 100
 	// RenewInterval indicates how often renew retries are performed
 	RenewInterval uint64 = 0x01FFFFFFFF
-	// DangerLine indicates when Next starts to panic
-	DangerLine uint64 = (1 << 40) * 96 / 100
+	// PanicValue indicates when Next starts to panic
+	PanicValue uint64 = (1 << 40) * 96 / 100
 )
 
 // WUID is for internal use only.
@@ -44,7 +44,7 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 // Next is for internal use only.
 func (this *WUID) Next() uint64 {
 	x := atomic.AddUint64(&this.N, 1)
-	if x&0xFFFFFFFFFF >= DangerLine {
+	if x&0xFFFFFFFFFF >= PanicValue {
 		panic(errors.New("<wuid> the low 40 bits are about to run out"))
 	}
 	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
