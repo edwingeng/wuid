@@ -20,12 +20,12 @@ const (
 // WUID is for internal use only.
 type WUID struct {
 	sync.Mutex
-	Section      uint8
-	N            uint64
-	Tag          string
-	Logger       Logger
-	Renew        func() error
-	H24Validator func(h24 uint64) error
+	Section     uint8
+	N           uint64
+	Tag         string
+	Logger      Logger
+	Renew       func() error
+	H24Verifier func(h24 uint64) error
 }
 
 // NewWUID is for internal use only.
@@ -101,8 +101,8 @@ func (this *WUID) VerifyH24(h24 uint64) error {
 		}
 	}
 
-	if this.H24Validator != nil {
-		if err := this.H24Validator(h24); err != nil {
+	if this.H24Verifier != nil {
+		if err := this.H24Verifier(h24); err != nil {
 			return err
 		}
 	}
@@ -139,9 +139,9 @@ func WithSection(section uint8) Option {
 	}
 }
 
-// WithH24Validator is for internal use only.
-func WithH24Validator(cb func(h24 uint64) error) Option {
+// WithH24Verifier is for internal use only.
+func WithH24Verifier(cb func(h24 uint64) error) Option {
 	return func(w *WUID) {
-		w.H24Validator = cb
+		w.H24Verifier = cb
 	}
 }

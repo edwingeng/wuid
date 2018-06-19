@@ -116,7 +116,7 @@ func WithSection(section uint8) Option {
 	return Option(internal.WithSection(section))
 }
 
-// WithH24Validator sets your own h24 validator
-func WithH24Validator(cb func(h24 uint64) error) Option {
-	return Option(internal.WithH24Validator(cb))
+// WithH24Verifier sets your own h24 verifier
+func WithH24Verifier(cb func(h24 uint64) error) Option {
+	return Option(internal.WithH24Verifier(cb))
 }

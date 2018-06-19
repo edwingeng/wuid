@@ -214,13 +214,13 @@ func TestWithSection_Reset(t *testing.T) {
 }
 
 func TestWithRenewCallback(t *testing.T) {
-	g := NewWUID("default", nil, WithH24Validator(func(h24 uint64) error {
+	g := NewWUID("default", nil, WithH24Verifier(func(h24 uint64) error {
 		if h24 >= 10 {
 			return errors.New("bomb")
 		}
 		return nil
 	}))
 	if err := g.VerifyH24(10); err.Error() != "bomb" {
-		t.Fatal("the H24Validator was not called")
+		t.Fatal("the H24Verifier was not called")
 	}
 }
