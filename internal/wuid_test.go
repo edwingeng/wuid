@@ -30,7 +30,7 @@ func (p uint64Slice) Less(i, j int) bool { return p[i] < p[j] }
 func (p uint64Slice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 func TestWUID_Next_Concurrent(t *testing.T) {
-	const total = 100
+	const total = 1000
 	g := NewWUID("default", nil)
 	var m sync.Mutex
 	var a = make(uint64Slice, 0, total)
@@ -210,5 +210,17 @@ func TestWithSection_Reset(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestWithRenewCallback(t *testing.T) {
+	g := NewWUID("default", nil, WithH24Validator(func(h24 uint64) error {
+		if h24 >= 10 {
+			return errors.New("bomb")
+		}
+		return nil
+	}))
+	if err := g.VerifyH24(10); err.Error() != "bomb" {
+		t.Fatal("the H24Validator was not called")
 	}
 }

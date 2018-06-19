@@ -20,11 +20,12 @@ const (
 // WUID is for internal use only.
 type WUID struct {
 	sync.Mutex
-	Section uint8
-	N       uint64
-	Tag     string
-	Logger  Logger
-	Renew   func() error
+	Section      uint8
+	N            uint64
+	Tag          string
+	Logger       Logger
+	Renew        func() error
+	H24Validator func(h24 uint64) error
 }
 
 // NewWUID is for internal use only.
@@ -45,7 +46,7 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 func (this *WUID) Next() uint64 {
 	x := atomic.AddUint64(&this.N, 1)
 	if x&0xFFFFFFFFFF >= PanicValue {
-		panic(errors.New("<wuid> the low 40 bits are about to run out"))
+		panic("<wuid> the low 40 bits are about to run out")
 	}
 	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
 		go func() {
@@ -57,7 +58,7 @@ func (this *WUID) Next() uint64 {
 
 			err := this.RenewNow()
 			if err != nil {
-				this.Logger.Warn(fmt.Sprintf("<wuid> renew failed. tag: %s, reason: %s", this.Tag, err.Error()))
+				this.Logger.Warn(fmt.Sprintf("<wuid> renew failed. reason: %s", err.Error()))
 			} else {
 				this.Logger.Info(fmt.Sprintf("<wuid> renew succeeded. tag: %s", this.Tag))
 			}
@@ -100,6 +101,12 @@ func (this *WUID) VerifyH24(h24 uint64) error {
 		}
 	}
 
+	if this.H24Validator != nil {
+		if err := this.H24Validator(h24); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -129,5 +136,12 @@ func WithSection(section uint8) Option {
 	}
 	return func(w *WUID) {
 		w.Section = section
+	}
+}
+
+// WithH24Validator is for internal use only.
+func WithH24Validator(cb func(h24 uint64) error) Option {
+	return func(w *WUID) {
+		w.H24Validator = cb
 	}
 }

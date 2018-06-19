@@ -87,7 +87,7 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 	}
 
 	this.w.Reset(h24 << 40)
-	this.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d", h24))
+	this.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d. tag: %s", h24, this.w.Tag))
 
 	this.w.Lock()
 	defer this.w.Unlock()
@@ -114,4 +114,9 @@ type Option internal.Option
 // It occupies the highest 4 bits of the numbers.
 func WithSection(section uint8) Option {
 	return Option(internal.WithSection(section))
+}
+
+// WithH24Validator sets your own h24 validator
+func WithH24Validator(cb func(h24 uint64) error) Option {
+	return Option(internal.WithH24Validator(cb))
 }
