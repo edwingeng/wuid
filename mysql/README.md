@@ -1,5 +1,3 @@
-# Usage Examples
-
 # Create MySQL table
 
 ```sql
