@@ -39,18 +39,17 @@ func TestWUID_LoadH24FromRedis(t *testing.T) {
 		Addr:     addr,
 		Password: pass,
 	})
+	defer func() {
+		_ = client.Close()
+	}()
 	_, err := client.Del(key).Result()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = client.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
-		err = g.LoadH24FromRedis(getRedisConfig())
+		err = g.LoadH24FromRedis(client, key)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -70,17 +69,8 @@ func TestWUID_LoadH24FromRedis_Error(t *testing.T) {
 	}
 
 	g := NewWUID("default", sl)
-	addr, pass, key := getRedisConfig()
-
-	if g.LoadH24FromRedis("", pass, key) == nil {
-		t.Fatal("addr is not properly checked")
-	}
-	if g.LoadH24FromRedis(addr, pass, "") == nil {
+	if g.LoadH24FromRedis(nil, "") == nil {
 		t.Fatal("key is not properly checked")
-	}
-
-	if err := g.LoadH24FromRedis("127.0.0.1:30000", pass, key); err == nil {
-		t.Fatal("LoadH24FromRedis should fail when is address is invalid")
 	}
 }
 
@@ -94,18 +84,17 @@ func TestWUID_LoadH24FromRedisCluster(t *testing.T) {
 		Addrs:    addrs,
 		Password: pass,
 	})
+	defer func() {
+		_ = client.Close()
+	}()
 	_, err := client.Del(key).Result()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = client.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
-		err = g.LoadH24FromRedisCluster(getRedisClusterConfig())
+		err = g.LoadH24FromRedis(client, key)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -119,33 +108,21 @@ func TestWUID_LoadH24FromRedisCluster(t *testing.T) {
 	}
 }
 
-func TestWUID_LoadH24FromRedisCluster_Error(t *testing.T) {
-	if !*bRedisCluster {
-		return
-	}
-
-	g := NewWUID("default", sl)
-	addrs, pass, key := getRedisClusterConfig()
-
-	if g.LoadH24FromRedisCluster([]string{}, pass, key) == nil {
-		t.Fatal("addr is not properly checked")
-	}
-	if g.LoadH24FromRedisCluster(addrs, pass, "") == nil {
-		t.Fatal("key is not properly checked")
-	}
-
-	if err := g.LoadH24FromRedisCluster([]string{"127.0.0.1:30000"}, pass, key); err == nil {
-		t.Fatal("LoadH24FromRedisCluster should fail when is address is invalid")
-	}
-}
-
 func TestWUID_Next_Renew(t *testing.T) {
 	if *bRedisCluster {
 		return
 	}
 
 	g := NewWUID("default", nil)
-	err := g.LoadH24FromRedis(getRedisConfig())
+	addr, pass, key := getRedisConfig()
+	client := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: pass,
+	})
+	defer func() {
+		_ = client.Close()
+	}()
+	err := g.LoadH24FromRedis(client, key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +151,15 @@ func TestWithSection(t *testing.T) {
 	}
 
 	g := NewWUID("default", sl, WithSection(15))
-	err := g.LoadH24FromRedis(getRedisConfig())
+	addr, pass, key := getRedisConfig()
+	client := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: pass,
+	})
+	defer func() {
+		_ = client.Close()
+	}()
+	err := g.LoadH24FromRedis(client, key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,9 +169,11 @@ func TestWithSection(t *testing.T) {
 }
 
 func Example() {
+	var client redis.Cmdable
+
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromRedis("127.0.0.1:6379", "", "wuid")
+	_ = g.LoadH24FromRedis(client, "wuid")
 
 	// Generate
 	for i := 0; i < 10; i++ {

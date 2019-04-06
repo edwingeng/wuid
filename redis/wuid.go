@@ -45,21 +45,10 @@ func (this *WUID) Next() uint64 {
 
 // LoadH24FromRedis adds 1 to a specific number in your Redis, fetches its new value, and then
 // sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
-	if len(addr) == 0 {
-		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
-	}
+func (this *WUID) LoadH24FromRedis(client redis.Cmdable, key string) error {
 	if len(key) == 0 {
 		return errors.New("key cannot be empty. tag: " + this.w.Tag)
 	}
-
-	client := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: pass,
-	})
-	defer func() {
-		_ = client.Close()
-	}()
 
 	n, err := client.Incr(key).Result()
 	if err != nil {
@@ -80,50 +69,7 @@ func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
 		return nil
 	}
 	this.w.Renew = func() error {
-		return this.LoadH24FromRedis(addr, pass, key)
-	}
-
-	return nil
-}
-
-// LoadH24FromRedisCluster adds 1 to a specific number in your Redis, fetches its new value, and
-// then sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromRedisCluster(addrs []string, pass, key string) error {
-	if len(addrs) == 0 {
-		return errors.New("addrs cannot be empty. tag: " + this.w.Tag)
-	}
-	if len(key) == 0 {
-		return errors.New("key cannot be empty. tag: " + this.w.Tag)
-	}
-
-	client := redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs:    addrs,
-		Password: pass,
-	})
-	defer func() {
-		_ = client.Close()
-	}()
-
-	n, err := client.Incr(key).Result()
-	if err != nil {
-		return err
-	}
-	h24 := uint64(n)
-	if err = this.w.VerifyH24(h24); err != nil {
-		return err
-	}
-
-	this.w.Reset(h24 << 40)
-	this.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d. tag: %s", h24, this.w.Tag))
-
-	this.w.Lock()
-	defer this.w.Unlock()
-
-	if this.w.Renew != nil {
-		return nil
-	}
-	this.w.Renew = func() error {
-		return this.LoadH24FromRedisCluster(addrs, pass, key)
+		return this.LoadH24FromRedis(client, key)
 	}
 
 	return nil
