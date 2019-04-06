@@ -46,34 +46,10 @@ func (this *WUID) Next() uint64 {
 
 // LoadH24FromMysql adds 1 to a specific number in your MySQL, fetches its new value, and then
 // sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error {
-	if len(addr) == 0 {
-		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
-	}
-	if len(user) == 0 {
-		return errors.New("user cannot be empty. tag: " + this.w.Tag)
-	}
-	if len(dbName) == 0 {
-		return errors.New("dbName cannot be empty. tag: " + this.w.Tag)
-	}
+func (this *WUID) LoadH24FromMysql(db *sql.DB, table string) error {
 	if len(table) == 0 {
 		return errors.New("table cannot be empty. tag: " + this.w.Tag)
 	}
-
-	var dsn string
-	dsn += user
-	if len(pass) > 0 {
-		dsn += ":" + pass
-	}
-	dsn += "@tcp(" + addr + ")/" + dbName
-
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = db.Close()
-	}()
 
 	result, err := db.Exec(fmt.Sprintf("REPLACE INTO %s (x) VALUES (0)", table))
 	if err != nil {
@@ -98,7 +74,7 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 		return nil
 	}
 	this.w.Renew = func() error {
-		return this.LoadH24FromMysql(addr, user, pass, dbName, table)
+		return this.LoadH24FromMysql(db, table)
 	}
 
 	return nil

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"math/rand"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -49,11 +48,33 @@ func getMysqlConfig() (string, string, string, string, string) {
 	return "127.0.0.1:3306", "root", "password", "test", "wuid"
 }
 
+func connect(addr, user, pass, dbName string) (*sql.DB, error) {
+	var dsn string
+	dsn += user
+	if len(pass) > 0 {
+		dsn += ":" + pass
+	}
+	dsn += "@tcp(" + addr + ")/" + dbName
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
 func TestWUID_LoadH24FromMysql(t *testing.T) {
+	addr, user, pass, dbName, table := getMysqlConfig()
+	db, err := connect(addr, user, pass, dbName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var nextValue uint64
 	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
-		err := g.LoadH24FromMysql(getMysqlConfig())
+		err := g.LoadH24FromMysql(db, table)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -73,47 +94,20 @@ func TestWUID_LoadH24FromMysql(t *testing.T) {
 
 func TestWUID_LoadH24FromMysql_Error(t *testing.T) {
 	g := NewWUID("default", sl)
-	addr, user, pass, dbName, table := getMysqlConfig()
-
-	if g.LoadH24FromMysql("", user, pass, dbName, table) == nil {
-		t.Fatal("addr is not properly checked")
-	}
-	if g.LoadH24FromMysql(addr, "", pass, dbName, table) == nil {
-		t.Fatal("user is not properly checked")
-	}
-	if g.LoadH24FromMysql(addr, user, pass, "", table) == nil {
-		t.Fatal("dbName is not properly checked")
-	}
-	if g.LoadH24FromMysql(addr, user, pass, dbName, "") == nil {
+	if g.LoadH24FromMysql(nil, "") == nil {
 		t.Fatal("table is not properly checked")
-	}
-
-	if err := g.LoadH24FromMysql("127.0.0.1:30000", user, pass, dbName, table); err == nil {
-		t.Fatal("LoadH24FromMysql should fail when is address is invalid")
-	}
-}
-
-func TestWUID_LoadH24FromMysql_UserPass(t *testing.T) {
-	var err error
-	g := NewWUID("default", sl)
-	addr, _, _, dbName, table := getMysqlConfig()
-	err = g.LoadH24FromMysql(addr, "wuid", "abc123", dbName, table)
-	if err != nil {
-		if strings.Contains(err.Error(), "Access denied for user") {
-			t.Log("you need to create a user in your MySQL. username: wuid, password: abc123")
-		} else {
-			t.Fatal(err)
-		}
-	}
-	err = g.LoadH24FromMysql(addr, "wuid", "nopass", dbName, table)
-	if err == nil {
-		t.Fatal("LoadH24FromMysql should fail when the password is incorrect")
 	}
 }
 
 func TestWUID_Next_Renew(t *testing.T) {
+	addr, user, pass, dbName, table := getMysqlConfig()
+	db, err := connect(addr, user, pass, dbName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	g := NewWUID("default", sl)
-	err := g.LoadH24FromMysql(getMysqlConfig())
+	err = g.LoadH24FromMysql(db, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,8 +131,14 @@ func TestWUID_Next_Renew(t *testing.T) {
 }
 
 func TestWithSection(t *testing.T) {
+	addr, user, pass, dbName, table := getMysqlConfig()
+	db, err := connect(addr, user, pass, dbName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	g := NewWUID("default", sl, WithSection(15))
-	err := g.LoadH24FromMysql(getMysqlConfig())
+	err = g.LoadH24FromMysql(db, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,9 +148,11 @@ func TestWithSection(t *testing.T) {
 }
 
 func Example() {
+	var db *sql.DB
+
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromMysql("127.0.0.1:3306", "root", "password", "test", "wuid")
+	_ = g.LoadH24FromMysql(db, "wuid")
 
 	// Generate
 	for i := 0; i < 10; i++ {

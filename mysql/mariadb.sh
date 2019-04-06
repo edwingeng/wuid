@@ -23,5 +23,3 @@ for ((i=0;i<1000;i++)); do
 	[[ $? -eq 0 ]] && break
 	sleep 1
 done
-
-mysql -h127.0.0.1 -uroot -ppassword test -e "CREATE USER wuid IDENTIFIED BY 'abc123'"
