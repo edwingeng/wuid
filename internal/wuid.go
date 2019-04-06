@@ -12,7 +12,7 @@ const (
 	// CriticalValue indicates when the low 40 bits are about to run out
 	CriticalValue uint64 = (1 << 40) * 80 / 100
 	// RenewInterval indicates how often renew retries are performed
-	RenewInterval uint64 = 0x01FFFFFFFF
+	RenewInterval uint64 = 0x03FFFFFFFF
 	// PanicValue indicates when Next starts to panic
 	PanicValue uint64 = (1 << 40) * 96 / 100
 )
@@ -46,6 +46,7 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 func (this *WUID) Next() uint64 {
 	x := atomic.AddUint64(&this.N, 1)
 	if x&0xFFFFFFFFFF >= PanicValue {
+		atomic.StoreUint64(&this.N, 0xFFFFFFFFFF)
 		panic("<wuid> the low 40 bits are about to run out")
 	}
 	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
@@ -58,7 +59,7 @@ func (this *WUID) Next() uint64 {
 
 			err := this.RenewNow()
 			if err != nil {
-				this.Logger.Warn(fmt.Sprintf("<wuid> renew failed. reason: %s", err.Error()))
+				this.Logger.Warn(fmt.Sprintf("<wuid> renew failed. tag: %s, reason: %+v", this.Tag, err))
 			} else {
 				this.Logger.Info(fmt.Sprintf("<wuid> renew succeeded. tag: %s", this.Tag))
 			}
@@ -131,7 +132,7 @@ type Option func(*WUID)
 
 // WithSection is for internal use only.
 func WithSection(section uint8) Option {
-	if section == 0 || section >= 16 {
+	if section < 1 || section > 15 {
 		panic("section must be in between [1, 15]")
 	}
 	return func(w *WUID) {

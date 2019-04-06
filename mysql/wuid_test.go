@@ -34,7 +34,9 @@ func init() {
 	if err != nil {
 		fmt.Println("mysql connection error: ", err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	_, err = db.Exec(fmt.Sprintf("SELECT 1 FROM %s.%s LIMIT 1", dbName, table))
 	if err != nil {
@@ -44,7 +46,7 @@ func init() {
 }
 
 func getMysqlConfig() (string, string, string, string, string) {
-	return "127.0.0.1:3306", "root", "", "test", "wuid"
+	return "127.0.0.1:3306", "root", "password", "test", "wuid"
 }
 
 func TestWUID_LoadH24FromMysql(t *testing.T) {
@@ -148,7 +150,7 @@ func TestWithSection(t *testing.T) {
 func Example() {
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromMysql("127.0.0.1:3306", "root", "", "test", "wuid")
+	_ = g.LoadH24FromMysql("127.0.0.1:3306", "root", "password", "test", "wuid")
 
 	// Generate
 	for i := 0; i < 10; i++ {

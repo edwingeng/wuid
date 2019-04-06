@@ -107,7 +107,9 @@ func Example() {
 	_ = g.LoadH24WithCallback(func() (uint64, error) {
 		resp, err := http.Get("https://stackoverflow.com/")
 		if resp != nil {
-			defer resp.Body.Close()
+			defer func() {
+				_ = resp.Body.Close()
+			}()
 		}
 		if err != nil {
 			return 0, err

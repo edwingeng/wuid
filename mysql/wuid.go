@@ -13,7 +13,7 @@ import (
 	"fmt"
 
 	"github.com/edwingeng/wuid/internal"
-	_ "github.com/go-sql-driver/mysql" // mysql driver
+	_ "github.com/go-sql-driver/mysql"
 )
 
 /*
@@ -71,7 +71,9 @@ func (this *WUID) LoadH24FromMysql(addr, user, pass, dbName, table string) error
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	result, err := db.Exec(fmt.Sprintf("REPLACE INTO %s (x) VALUES (0)", table))
 	if err != nil {

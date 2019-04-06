@@ -16,5 +16,4 @@ func Example() {
 	for i := 0; i < 10; i++ {
 		fmt.Printf("%#016x\n", g.Next())
 	}
-
 }

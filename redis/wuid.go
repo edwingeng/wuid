@@ -57,7 +57,9 @@ func (this *WUID) LoadH24FromRedis(addr, pass, key string) error {
 		Addr:     addr,
 		Password: pass,
 	})
-	defer client.Close()
+	defer func() {
+		_ = client.Close()
+	}()
 
 	n, err := client.Incr(key).Result()
 	if err != nil {
@@ -98,7 +100,9 @@ func (this *WUID) LoadH24FromRedisCluster(addrs []string, pass, key string) erro
 		Addrs:    addrs,
 		Password: pass,
 	})
-	defer client.Close()
+	defer func() {
+		_ = client.Close()
+	}()
 
 	n, err := client.Incr(key).Result()
 	if err != nil {

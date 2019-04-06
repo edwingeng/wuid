@@ -82,7 +82,9 @@ func BenchmarkRedis(b *testing.B) {
 	client := redis.NewClient(&redis.Options{
 		Addr: "127.0.0.1:6379",
 	})
-	defer client.Close()
+	defer func() {
+		_ = client.Close()
+	}()
 	b.ResetTimer()
 
 	key := "foo:id"
