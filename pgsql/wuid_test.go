@@ -44,16 +44,16 @@ func init() {
 	connStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", pgc.host, pgc.user, pgc.pass, pgc.db)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		fmt.Println("init failed error: ", err)
+		fmt.Println("pgsql init failed error: ", err)
 	}
 	defer db.Close()
-	_, err = db.Exec(`CREATE TABLE wuid
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS wuid
 		(
 			h serial NOT NULL UNIQUE,
 			x int NOT NULL PRIMARY KEY DEFAULT '0'
 		)`)
 	if err != nil {
-		fmt.Println("Table creation error, this is expected if table already created. error: ", err)
+		fmt.Println("pgsql table creation error, this is expected if table already created. error: ", err)
 	}
 }
 func TestLoadH24FromPg(t *testing.T) {
@@ -156,6 +156,7 @@ func TestLoadH24FromPgWithOpts(t *testing.T) {
 
 	fmt.Println(" - " + t.Name() + " complete - ")
 }
+
 func TestWUID_LoadH24FromPg_UserPass(t *testing.T) {
 	var err error
 	g := NewWUID("default", sl)

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/edwingeng/wuid/internal"
-	_ "github.com/go-sql-driver/mysql" // mysql driver
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type simpleLogger struct{}

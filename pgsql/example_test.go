@@ -1,15 +1,14 @@
-package main
+package wuid
 
 import (
 	"fmt"
 
-	"github.com/edwingeng/wuid/pgsql"
 	_ "github.com/lib/pq" // postgres driver
 )
 
 func Example() {
 	// Setup
-	g := wuid.NewWUID("default", nil)
+	g := NewWUID("default", nil)
 	_ = g.LoadH24FromPg(pgc.host, pgc.user, pgc.pass, pgc.db, pgc.table)
 
 	// Generate
