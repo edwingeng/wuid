@@ -8,13 +8,18 @@ By now, Redis, MySQL, and MongoDB are supported.
 package wuid
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/edwingeng/wuid/internal"
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 /*
@@ -45,18 +50,9 @@ func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
 
-// LoadH24FromMongo adds 1 to a specific number in your MongoDB, fetches its new value,
-// and then sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMongo(addr, user, pass, dbName, coll, docID string) error {
-	return this.LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID, 3*time.Second)
-}
-
 // LoadH24FromMongoWithTimeout adds 1 to a specific number in your MongoDB, fetches its new value,
 // and then sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, docID string, dialTimeout time.Duration) error {
-	if len(addr) == 0 {
-		return errors.New("addr cannot be empty. tag: " + this.w.Tag)
-	}
+func (this *WUID) LoadH24FromMongo(client *mongo.Client, dbName, coll, docID string) error {
 	if len(dbName) == 0 {
 		return errors.New("dbName cannot be empty. tag: " + this.w.Tag)
 	}
@@ -67,30 +63,31 @@ func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, do
 		return errors.New("docID cannot be empty. tag: " + this.w.Tag)
 	}
 
-	var url = "mongodb://" + addr + "/" + coll
-	mongo, err := mgo.DialWithTimeout(url, dialTimeout)
-	if err != nil {
+	ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel1()
+	if err := client.Ping(ctx1, readpref.Primary()); err != nil {
 		return err
 	}
-	defer mongo.Close()
 
-	change := mgo.Change{
-		Update:    bson.M{"$inc": bson.M{"n": int32(1)}},
-		Upsert:    true,
-		ReturnNew: true,
+	collOpts := &options.CollectionOptions{
+		ReadConcern:    readconcern.Majority(),
+		WriteConcern:   writeconcern.New(writeconcern.WMajority()),
+		ReadPreference: readpref.Primary(),
 	}
-	if len(user) > 0 {
-		if err = mongo.DB(dbName).Login(user, pass); err != nil {
-			return err
-		}
+	c := client.Database(dbName).Collection(coll, collOpts)
+
+	filter := bson.D{{"_id", docID}}
+	update := bson.D{{"$inc", bson.D{{"n", int32(1)}}}}
+	var findOneAndUpdateOptions options.FindOneAndUpdateOptions
+	findOneAndUpdateOptions.SetUpsert(true).SetReturnDocument(options.After)
+	var doc struct {
+		N int32
 	}
-	c := mongo.DB(dbName).C(coll)
-	m := make(map[string]interface{})
-	_, err = c.FindId(docID).Apply(change, &m)
+	err := c.FindOneAndUpdate(ctx1, filter, update, &findOneAndUpdateOptions).Decode(&doc)
 	if err != nil {
 		return err
 	}
-	h24 := uint64(m["n"].(int))
+	h24 := uint64(doc.N)
 	if err = this.w.VerifyH24(h24); err != nil {
 		return err
 	}
@@ -105,7 +102,7 @@ func (this *WUID) LoadH24FromMongoWithTimeout(addr, user, pass, dbName, coll, do
 		return nil
 	}
 	this.w.Renew = func() error {
-		return this.LoadH24FromMongo(addr, user, pass, dbName, coll, docID)
+		return this.LoadH24FromMongo(client, dbName, coll, docID)
 	}
 
 	return nil

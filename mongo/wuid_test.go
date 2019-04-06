@@ -1,14 +1,16 @@
 package wuid
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/edwingeng/wuid/internal"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type simpleLogger struct{}
@@ -18,15 +20,28 @@ func (this *simpleLogger) Warn(args ...interface{}) {}
 
 var sl = &simpleLogger{}
 
-func getMongoConfig() (string, string, string, string, string, string) {
-	return "127.0.0.1:27017", "", "", "test", "foo", "wuid"
+func getMongoConfig() (string, string, string, string) {
+	return "127.0.0.1:27017", "test", "wuid", "default"
+}
+
+func connect(addr string) (*mongo.Client, error) {
+	ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel1()
+	uri := fmt.Sprintf("mongodb://%s:27017", addr)
+	return mongo.Connect(ctx1, options.Client().ApplyURI(uri))
 }
 
 func TestWUID_LoadH24FromMongo(t *testing.T) {
+	addr, dbName, coll, docID := getMongoConfig()
+	client, err := connect(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var nextValue uint64
-	g := NewWUID("default", sl)
+	g := NewWUID(docID, sl)
 	for i := 0; i < 1000; i++ {
-		err := g.LoadH24FromMongo(getMongoConfig())
+		err := g.LoadH24FromMongo(client, dbName, coll, docID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -45,48 +60,29 @@ func TestWUID_LoadH24FromMongo(t *testing.T) {
 }
 
 func TestWUID_LoadH24FromMongo_Error(t *testing.T) {
-	g := NewWUID("default", sl)
-	addr, user, pass, dbName, coll, docID := getMongoConfig()
+	_, dbName, coll, docID := getMongoConfig()
+	g := NewWUID(docID, sl)
 
-	if g.LoadH24FromMongo("", user, pass, dbName, coll, docID) == nil {
-		t.Fatal("addr is not properly checked")
-	}
-	if g.LoadH24FromMongo(addr, user, pass, "", coll, docID) == nil {
+	if g.LoadH24FromMongo(nil, "", coll, docID) == nil {
 		t.Fatal("dbName is not properly checked")
 	}
-	if g.LoadH24FromMongo(addr, user, pass, dbName, "", docID) == nil {
+	if g.LoadH24FromMongo(nil, dbName, "", docID) == nil {
 		t.Fatal("coll is not properly checked")
 	}
-	if g.LoadH24FromMongo(addr, user, pass, dbName, coll, "") == nil {
+	if g.LoadH24FromMongo(nil, dbName, coll, "") == nil {
 		t.Fatal("docID is not properly checked")
-	}
-
-	if g.LoadH24FromMongoWithTimeout("127.0.0.1:30000", user, pass, dbName, coll, docID, time.Second) == nil {
-		t.Fatal("LoadH24FromMongoWithTimeout should fail when is address is invalid")
-	}
-}
-
-func TestWUID_LoadH24FromMongo_UserPass(t *testing.T) {
-	var err error
-	g := NewWUID("default", sl)
-	addr, _, _, dbName, coll, docID := getMongoConfig()
-	err = g.LoadH24FromMongo(addr, "wuid", "abc123", dbName, coll, docID)
-	if err != nil {
-		if strings.Contains(err.Error(), "Authentication failed") {
-			t.Log("you need to create a user in your Mongo. username: wuid, password: abc123")
-		} else {
-			t.Fatal(err)
-		}
-	}
-	err = g.LoadH24FromMongo(addr, "wuid", "nopass", dbName, coll, docID)
-	if err == nil {
-		t.Fatal("LoadH24FromMongo should fail when the password is incorrect")
 	}
 }
 
 func TestWUID_Next_Renew(t *testing.T) {
-	g := NewWUID("default", sl)
-	err := g.LoadH24FromMongo(getMongoConfig())
+	addr, dbName, coll, docID := getMongoConfig()
+	client, err := connect(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g := NewWUID(docID, sl)
+	err = g.LoadH24FromMongo(client, dbName, coll, docID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,8 +106,14 @@ func TestWUID_Next_Renew(t *testing.T) {
 }
 
 func TestWithSection(t *testing.T) {
-	g := NewWUID("default", sl, WithSection(15))
-	err := g.LoadH24FromMongo(getMongoConfig())
+	addr, dbName, coll, docID := getMongoConfig()
+	client, err := connect(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g := NewWUID(docID, sl, WithSection(15))
+	err = g.LoadH24FromMongo(client, dbName, coll, docID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,9 +123,11 @@ func TestWithSection(t *testing.T) {
 }
 
 func Example() {
+	var client *mongo.Client
+
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromMongo("127.0.0.1:27017", "", "", "test", "foo", "wuid")
+	_ = g.LoadH24FromMongo(client, "test", "wuid", "default")
 
 	// Generate
 	for i := 0; i < 10; i++ {

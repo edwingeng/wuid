@@ -23,8 +23,17 @@ func getRedisConfig() (string, string, string) {
 }
 
 func BenchmarkWUID(b *testing.B) {
+	addr, pass, key := getRedisConfig()
+	client := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: pass,
+	})
+	defer func() {
+		_ = client.Close()
+	}()
+
 	g := wuid.NewWUID("default", sl)
-	err := g.LoadH24FromRedis(getRedisConfig())
+	err := g.LoadH24FromRedis(client, key)
 	if err != nil {
 		b.Fatal(err)
 	}
