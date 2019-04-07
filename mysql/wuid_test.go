@@ -70,11 +70,14 @@ func TestWUID_LoadH24FromMysql(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	newDB := func() (*sql.DB, error) {
+		return db, nil
+	}
 
 	var nextValue uint64
 	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
-		err := g.LoadH24FromMysql(db, table)
+		err := g.LoadH24FromMysql(newDB, table)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -105,9 +108,12 @@ func TestWUID_Next_Renew(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	newDB := func() (*sql.DB, error) {
+		return db, nil
+	}
 
 	g := NewWUID("default", sl)
-	err = g.LoadH24FromMysql(db, table)
+	err = g.LoadH24FromMysql(newDB, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,9 +142,12 @@ func TestWithSection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	newDB := func() (*sql.DB, error) {
+		return db, nil
+	}
 
 	g := NewWUID("default", sl, WithSection(15))
-	err = g.LoadH24FromMysql(db, table)
+	err = g.LoadH24FromMysql(newDB, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,11 +157,15 @@ func TestWithSection(t *testing.T) {
 }
 
 func Example() {
-	var db *sql.DB
+	newDB := func() (*sql.DB, error) {
+		var db *sql.DB
+		// ...
+		return db, nil
+	}
 
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromMysql(db, "wuid")
+	_ = g.LoadH24FromMysql(newDB, "wuid")
 
 	// Generate
 	for i := 0; i < 10; i++ {

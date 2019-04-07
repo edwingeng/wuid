@@ -28,15 +28,7 @@ BenchmarkSnowflake    5000000          244 ns/op           0 B/op          0 all
 
 # Install
 ``` bash
-go get -u github.com/edwingeng/wuid/...
-```
-Or choose one command from the following if you prefer `dep`:
-``` bash
-dep ensure -add github.com/edwingeng/wuid/redis
-dep ensure -add github.com/edwingeng/wuid/mysql
-dep ensure -add github.com/edwingeng/wuid/pgsql
-dep ensure -add github.com/edwingeng/wuid/mongo
-dep ensure -add github.com/edwingeng/wuid/callback
+go get -u github.com/edwingeng/wuid
 ```
 
 # Usage examples
@@ -44,9 +36,15 @@ dep ensure -add github.com/edwingeng/wuid/callback
 ``` go
 import "github.com/edwingeng/wuid/redis"
 
+newClient := func() (redis.Cmdable, error) {
+    var client redis.Cmdable
+    // ...
+    return client, nil
+}
+
 // Setup
-g := wuid.NewWUID("default", nil)
-g.LoadH24FromRedis("127.0.0.1:6379", "", "wuid")
+g := NewWUID("default", nil)
+_ = g.LoadH24FromRedis(newClient, "wuid")
 
 // Generate
 for i := 0; i < 10; i++ {
@@ -58,9 +56,15 @@ for i := 0; i < 10; i++ {
 ``` go
 import "github.com/edwingeng/wuid/mysql"
 
+newDB := func() (*sql.DB, error) {
+    var db *sql.DB
+    // ...
+    return db, nil
+}
+
 // Setup
-g := wuid.NewWUID("default", nil)
-g.LoadH24FromMysql("127.0.0.1:3306", "root", "", "test", "wuid")
+g := NewWUID("default", nil)
+_ = g.LoadH24FromMysql(newDB, "wuid")
 
 // Generate
 for i := 0; i < 10; i++ {
@@ -72,9 +76,15 @@ for i := 0; i < 10; i++ {
 ``` go
 import "github.com/edwingeng/wuid/mongo"
 
+newClient := func() (*mongo.Client, error) {
+    var client *mongo.Client
+    // ...
+    return client, nil
+}
+
 // Setup
-g := wuid.NewWUID("default", nil)
-g.LoadH24FromMongo("127.0.0.1:27017", "", "", "test", "foo", "wuid")
+g := NewWUID("default", nil)
+_ = g.LoadH24FromMongo(newClient, "test", "wuid", "default")
 
 // Generate
 for i := 0; i < 10; i++ {

@@ -37,11 +37,14 @@ func TestWUID_LoadH24FromMongo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	newClient := func() (*mongo.Client, error) {
+		return client, nil
+	}
 
 	var nextValue uint64
 	g := NewWUID(docID, sl)
 	for i := 0; i < 1000; i++ {
-		err := g.LoadH24FromMongo(client, dbName, coll, docID)
+		err := g.LoadH24FromMongo(newClient, dbName, coll, docID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -80,9 +83,12 @@ func TestWUID_Next_Renew(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	newClient := func() (*mongo.Client, error) {
+		return client, nil
+	}
 
 	g := NewWUID(docID, sl)
-	err = g.LoadH24FromMongo(client, dbName, coll, docID)
+	err = g.LoadH24FromMongo(newClient, dbName, coll, docID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,9 +117,12 @@ func TestWithSection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	newClient := func() (*mongo.Client, error) {
+		return client, nil
+	}
 
 	g := NewWUID(docID, sl, WithSection(15))
-	err = g.LoadH24FromMongo(client, dbName, coll, docID)
+	err = g.LoadH24FromMongo(newClient, dbName, coll, docID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,11 +132,15 @@ func TestWithSection(t *testing.T) {
 }
 
 func Example() {
-	var client *mongo.Client
+	newClient := func() (*mongo.Client, error) {
+		var client *mongo.Client
+		// ...
+		return client, nil
+	}
 
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromMongo(client, "test", "wuid", "default")
+	_ = g.LoadH24FromMongo(newClient, "test", "wuid", "default")
 
 	// Generate
 	for i := 0; i < 10; i++ {

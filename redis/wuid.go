@@ -45,11 +45,15 @@ func (this *WUID) Next() uint64 {
 
 // LoadH24FromRedis adds 1 to a specific number in your Redis, fetches its new value, and then
 // sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromRedis(client redis.Cmdable, key string) error {
+func (this *WUID) LoadH24FromRedis(newClient func() (redis.Cmdable, error), key string) error {
 	if len(key) == 0 {
 		return errors.New("key cannot be empty. tag: " + this.w.Tag)
 	}
 
+	client, err := newClient()
+	if err != nil {
+		return err
+	}
 	n, err := client.Incr(key).Result()
 	if err != nil {
 		return err
@@ -69,7 +73,7 @@ func (this *WUID) LoadH24FromRedis(client redis.Cmdable, key string) error {
 		return nil
 	}
 	this.w.Renew = func() error {
-		return this.LoadH24FromRedis(client, key)
+		return this.LoadH24FromRedis(newClient, key)
 	}
 
 	return nil
