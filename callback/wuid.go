@@ -43,17 +43,24 @@ func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
 
+type H24Callback func() (h24 uint64, done func(), err error)
+
 // LoadH24WithCallback calls cb to get a number, and then sets it as the high 24 bits of the unique
 // numbers that Next generates.
 // The number returned by cb should look like 0x000123, not 0x0001230000000000.
-func (this *WUID) LoadH24WithCallback(cb func() (uint64, error)) error {
+func (this *WUID) LoadH24WithCallback(cb H24Callback) error {
 	if cb == nil {
 		return errors.New("cb cannot be nil. tag: " + this.w.Tag)
 	}
 
-	h24, err := cb()
+	h24, done, err := cb()
 	if err != nil {
 		return err
+	}
+	if done != nil {
+		defer func() {
+			done()
+		}()
 	}
 
 	if err = this.w.VerifyH24(h24); err != nil {

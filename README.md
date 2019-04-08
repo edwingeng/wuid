@@ -97,23 +97,25 @@ for i := 0; i < 10; i++ {
 import "github.com/edwingeng/wuid/callback"
 
 // Setup
-g := wuid.NewWUID("default", nil)
-g.LoadH24WithCallback(func() (uint64, error) {
+g := NewWUID("default", nil)
+_ = g.LoadH24WithCallback(func() (uint64, func(), error) {
     resp, err := http.Get("https://stackoverflow.com/")
     if resp != nil {
-        defer resp.Body.Close()
+        defer func() {
+            _ = resp.Body.Close()
+        }()
     }
     if err != nil {
-        return 0, err
+        return 0, nil, err
     }
 
     bytes, err := ioutil.ReadAll(resp.Body)
     if err != nil {
-        return 0, err
+        return 0, nil, err
     }
 
     fmt.Printf("Page size: %d (%#06x)\n\n", len(bytes), len(bytes))
-    return uint64(len(bytes)), nil
+    return uint64(len(bytes)), nil, nil
 })
 
 // Generate

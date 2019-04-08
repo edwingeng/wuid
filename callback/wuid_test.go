@@ -25,15 +25,15 @@ func TestWUID_LoadH24WithCallback_Error(t *testing.T) {
 		t.Fatal("LoadH24WithCallback should fail when cb is nil")
 	}
 
-	err = g.LoadH24WithCallback(func() (uint64, error) {
-		return 0, errors.New("foo")
+	err = g.LoadH24WithCallback(func() (uint64, func(), error) {
+		return 0, nil, errors.New("foo")
 	})
 	if err == nil {
 		t.Fatal("LoadH24WithCallback should fail when cb returns an error")
 	}
 
-	err = g.LoadH24WithCallback(func() (uint64, error) {
-		return 0, nil
+	err = g.LoadH24WithCallback(func() (uint64, func(), error) {
+		return 0, nil, nil
 	})
 	if err == nil {
 		t.Fatal("LoadH24WithCallback should fail when cb returns an invalid h24")
@@ -41,9 +41,12 @@ func TestWUID_LoadH24WithCallback_Error(t *testing.T) {
 }
 
 func TestWUID_LoadH24WithCallback(t *testing.T) {
-	var h24 uint64
-	cb := func() (uint64, error) {
-		return atomic.AddUint64(&h24, 1), nil
+	var h24, counter uint64
+	done := func() {
+		counter++
+	}
+	cb := func() (uint64, func(), error) {
+		return atomic.AddUint64(&h24, 1), done, nil
 	}
 
 	g := NewWUID("default", sl)
@@ -60,12 +63,16 @@ func TestWUID_LoadH24WithCallback(t *testing.T) {
 			g.Next()
 		}
 	}
+
+	if counter != 1000 {
+		t.Fatalf("the callback done do not work as expected. counter: %d", counter)
+	}
 }
 
 func TestWUID_LoadH24WithCallback_Section(t *testing.T) {
 	var h24 uint64
-	cb := func() (uint64, error) {
-		return atomic.AddUint64(&h24, 1), nil
+	cb := func() (uint64, func(), error) {
+		return atomic.AddUint64(&h24, 1), nil, nil
 	}
 
 	g := NewWUID("default", sl, WithSection(1))
@@ -85,8 +92,8 @@ func TestWUID_LoadH24WithCallback_Section(t *testing.T) {
 }
 
 func TestWUID_LoadH24WithCallback_Same(t *testing.T) {
-	cb := func() (uint64, error) {
-		return 100, nil
+	cb := func() (uint64, func(), error) {
+		return 100, nil, nil
 	}
 
 	g1 := NewWUID("default", sl)
@@ -103,8 +110,9 @@ func TestWUID_LoadH24WithCallback_Same(t *testing.T) {
 }
 
 func Example() {
+	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24WithCallback(func() (uint64, error) {
+	_ = g.LoadH24WithCallback(func() (uint64, func(), error) {
 		resp, err := http.Get("https://stackoverflow.com/")
 		if resp != nil {
 			defer func() {
@@ -112,18 +120,19 @@ func Example() {
 			}()
 		}
 		if err != nil {
-			return 0, err
+			return 0, nil, err
 		}
 
 		bytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return 0, err
+			return 0, nil, err
 		}
 
 		fmt.Printf("Page size: %d (%#06x)\n\n", len(bytes), len(bytes))
-		return uint64(len(bytes)), nil
+		return uint64(len(bytes)), nil, nil
 	})
 
+	// Generate
 	for i := 0; i < 10; i++ {
 		fmt.Printf("%#016x\n", g.Next())
 	}
