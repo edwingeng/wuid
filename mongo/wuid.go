@@ -50,9 +50,11 @@ func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
 
+type NewClient func() (client *mongo.Client, autoDisconnect bool, err error)
+
 // LoadH24FromMongoWithTimeout adds 1 to a specific number in your MongoDB, fetches its new value,
 // and then sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMongo(newClient func() (*mongo.Client, error), dbName, coll, docID string) error {
+func (this *WUID) LoadH24FromMongo(newClient NewClient, dbName, coll, docID string) error {
 	if len(dbName) == 0 {
 		return errors.New("dbName cannot be empty. tag: " + this.w.Tag)
 	}
@@ -63,10 +65,18 @@ func (this *WUID) LoadH24FromMongo(newClient func() (*mongo.Client, error), dbNa
 		return errors.New("docID cannot be empty. tag: " + this.w.Tag)
 	}
 
-	client, err := newClient()
+	client, autoDisconnect, err := newClient()
 	if err != nil {
 		return err
 	}
+	if autoDisconnect {
+		defer func() {
+			ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*5)
+			defer cancel2()
+			_ = client.Disconnect(ctx2)
+		}()
+	}
+
 	ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel1()
 	if err := client.Ping(ctx1, readpref.Primary()); err != nil {

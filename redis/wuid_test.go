@@ -46,8 +46,11 @@ func TestWUID_LoadH24FromRedis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newClient := func() (redis.Cmdable, error) {
-		return client, nil
+	newClient := func() (redis.Cmdable, bool, error) {
+		return redis.NewClient(&redis.Options{
+			Addr:     addr,
+			Password: pass,
+		}), true, nil
 	}
 
 	g := NewWUID("default", sl)
@@ -94,8 +97,8 @@ func TestWUID_LoadH24FromRedisCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newClient := func() (redis.Cmdable, error) {
-		return client, nil
+	newClient := func() (redis.Cmdable, bool, error) {
+		return client, false, nil
 	}
 
 	g := NewWUID("default", sl)
@@ -128,8 +131,8 @@ func TestWUID_Next_Renew(t *testing.T) {
 	defer func() {
 		_ = client.Close()
 	}()
-	newClient := func() (redis.Cmdable, error) {
-		return client, nil
+	newClient := func() (redis.Cmdable, bool, error) {
+		return client, false, nil
 	}
 	err := g.LoadH24FromRedis(newClient, key)
 	if err != nil {
@@ -168,8 +171,8 @@ func TestWithSection(t *testing.T) {
 	defer func() {
 		_ = client.Close()
 	}()
-	newClient := func() (redis.Cmdable, error) {
-		return client, nil
+	newClient := func() (redis.Cmdable, bool, error) {
+		return client, false, nil
 	}
 
 	err := g.LoadH24FromRedis(newClient, key)
@@ -182,10 +185,10 @@ func TestWithSection(t *testing.T) {
 }
 
 func Example() {
-	newClient := func() (redis.Cmdable, error) {
+	newClient := func() (redis.Cmdable, bool, error) {
 		var client redis.Cmdable
 		// ...
-		return client, nil
+		return client, true, nil
 	}
 
 	// Setup

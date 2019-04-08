@@ -10,6 +10,7 @@ package wuid
 import (
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/edwingeng/wuid/internal"
 	"github.com/go-redis/redis"
@@ -43,17 +44,26 @@ func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
 
+type NewClient func() (client redis.Cmdable, autoDisconnect bool, err error)
+
 // LoadH24FromRedis adds 1 to a specific number in your Redis, fetches its new value, and then
 // sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromRedis(newClient func() (redis.Cmdable, error), key string) error {
+func (this *WUID) LoadH24FromRedis(newClient NewClient, key string) error {
 	if len(key) == 0 {
 		return errors.New("key cannot be empty. tag: " + this.w.Tag)
 	}
 
-	client, err := newClient()
+	client, autoDisconnect, err := newClient()
 	if err != nil {
 		return err
 	}
+	if autoDisconnect {
+		defer func() {
+			closer := client.(io.Closer)
+			_ = closer.Close()
+		}()
+	}
+
 	n, err := client.Incr(key).Result()
 	if err != nil {
 		return err

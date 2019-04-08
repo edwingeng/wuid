@@ -33,12 +33,9 @@ func connect(addr string) (*mongo.Client, error) {
 
 func TestWUID_LoadH24FromMongo(t *testing.T) {
 	addr, dbName, coll, docID := getMongoConfig()
-	client, err := connect(addr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	newClient := func() (*mongo.Client, error) {
-		return client, nil
+	newClient := func() (*mongo.Client, bool, error) {
+		client, err := connect(addr)
+		return client, true, err
 	}
 
 	var nextValue uint64
@@ -83,8 +80,8 @@ func TestWUID_Next_Renew(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newClient := func() (*mongo.Client, error) {
-		return client, nil
+	newClient := func() (*mongo.Client, bool, error) {
+		return client, false, nil
 	}
 
 	g := NewWUID(docID, sl)
@@ -117,8 +114,8 @@ func TestWithSection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newClient := func() (*mongo.Client, error) {
-		return client, nil
+	newClient := func() (*mongo.Client, bool, error) {
+		return client, false, nil
 	}
 
 	g := NewWUID(docID, sl, WithSection(15))
@@ -132,10 +129,10 @@ func TestWithSection(t *testing.T) {
 }
 
 func Example() {
-	newClient := func() (*mongo.Client, error) {
+	newClient := func() (*mongo.Client, bool, error) {
 		var client *mongo.Client
 		// ...
-		return client, nil
+		return client, true, nil
 	}
 
 	// Setup

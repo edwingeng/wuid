@@ -44,17 +44,25 @@ func (this *WUID) Next() uint64 {
 	return this.w.Next()
 }
 
+type NewDB func() (client *sql.DB, autoDisconnect bool, err error)
+
 // LoadH24FromMysql adds 1 to a specific number in your MySQL, fetches its new value, and then
 // sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMysql(newDB func() (*sql.DB, error), table string) error {
+func (this *WUID) LoadH24FromMysql(newDB NewDB, table string) error {
 	if len(table) == 0 {
 		return errors.New("table cannot be empty. tag: " + this.w.Tag)
 	}
 
-	db, err := newDB()
+	db, autoDisconnect, err := newDB()
 	if err != nil {
 		return err
 	}
+	if autoDisconnect {
+		defer func() {
+			_ = db.Close()
+		}()
+	}
+
 	result, err := db.Exec(fmt.Sprintf("REPLACE INTO %s (x) VALUES (0)", table))
 	if err != nil {
 		return err

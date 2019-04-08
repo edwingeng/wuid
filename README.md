@@ -36,10 +36,10 @@ go get -u github.com/edwingeng/wuid
 ``` go
 import "github.com/edwingeng/wuid/redis"
 
-newClient := func() (redis.Cmdable, error) {
+newClient := func() (redis.Cmdable, bool, error) {
     var client redis.Cmdable
     // ...
-    return client, nil
+    return client, true, nil
 }
 
 // Setup
@@ -56,10 +56,10 @@ for i := 0; i < 10; i++ {
 ``` go
 import "github.com/edwingeng/wuid/mysql"
 
-newDB := func() (*sql.DB, error) {
+newDB := func() (*sql.DB, bool, error) {
     var db *sql.DB
     // ...
-    return db, nil
+    return db, true, nil
 }
 
 // Setup
@@ -76,10 +76,10 @@ for i := 0; i < 10; i++ {
 ``` go
 import "github.com/edwingeng/wuid/mongo"
 
-newClient := func() (*mongo.Client, error) {
+newClient := func() (*mongo.Client, bool, error) {
     var client *mongo.Client
     // ...
-    return client, nil
+    return client, true, nil
 }
 
 // Setup

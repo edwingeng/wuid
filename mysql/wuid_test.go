@@ -66,12 +66,9 @@ func connect(addr, user, pass, dbName string) (*sql.DB, error) {
 
 func TestWUID_LoadH24FromMysql(t *testing.T) {
 	addr, user, pass, dbName, table := getMysqlConfig()
-	db, err := connect(addr, user, pass, dbName)
-	if err != nil {
-		t.Fatal(err)
-	}
-	newDB := func() (*sql.DB, error) {
-		return db, nil
+	newDB := func() (*sql.DB, bool, error) {
+		db, err := connect(addr, user, pass, dbName)
+		return db, true, err
 	}
 
 	var nextValue uint64
@@ -108,8 +105,8 @@ func TestWUID_Next_Renew(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newDB := func() (*sql.DB, error) {
-		return db, nil
+	newDB := func() (*sql.DB, bool, error) {
+		return db, false, nil
 	}
 
 	g := NewWUID("default", sl)
@@ -142,8 +139,8 @@ func TestWithSection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newDB := func() (*sql.DB, error) {
-		return db, nil
+	newDB := func() (*sql.DB, bool, error) {
+		return db, false, nil
 	}
 
 	g := NewWUID("default", sl, WithSection(15))
@@ -157,10 +154,10 @@ func TestWithSection(t *testing.T) {
 }
 
 func Example() {
-	newDB := func() (*sql.DB, error) {
+	newDB := func() (*sql.DB, bool, error) {
 		var db *sql.DB
 		// ...
-		return db, nil
+		return db, true, nil
 	}
 
 	// Setup
