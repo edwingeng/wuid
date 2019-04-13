@@ -47,7 +47,7 @@ func init() {
 		fmt.Println("pgsql init failed error: ", err)
 	}
 	defer db.Close()
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS wuid
+	_, err = db.Exec(`CREATE TABLE wuid
 		(
 			h serial NOT NULL UNIQUE,
 			x int NOT NULL PRIMARY KEY DEFAULT '0'

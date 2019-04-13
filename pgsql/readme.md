@@ -1,3 +1,5 @@
+# The postgres version need to upgrade according to the new design. Please help if you are familier with postgres.
+
 # Overview
 
 This is a Postgres compatible version of [WUID](https://github.com/edwingeng/wuid).
