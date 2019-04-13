@@ -2,7 +2,7 @@
 Package wuid provides WUID, an extremely fast unique number generator. It is 10-135 times faster
 than UUID and 4600 times faster than generating unique numbers with Redis.
 
-WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store.
+WUID generates unique 64-bit integers in sequence. The high 28 bits are loaded from a data store.
 By now, Redis, MySQL, and MongoDB are supported.
 */
 package wuid
@@ -52,9 +52,9 @@ func (this *WUID) Next() uint64 {
 
 type NewClient func() (client *mongo.Client, autoDisconnect bool, err error)
 
-// LoadH24FromMongoWithTimeout adds 1 to a specific number in your MongoDB, fetches its new value,
-// and then sets that as the high 24 bits of the unique numbers that Next generates.
-func (this *WUID) LoadH24FromMongo(newClient NewClient, dbName, coll, docID string) error {
+// LoadH28FromMongo adds 1 to a specific number in your MongoDB, fetches its new value,
+// and then sets that as the high 28 bits of the unique numbers that Next generates.
+func (this *WUID) LoadH28FromMongo(newClient NewClient, dbName, coll, docID string) error {
 	if len(dbName) == 0 {
 		return errors.New("dbName cannot be empty. tag: " + this.w.Tag)
 	}
@@ -101,13 +101,13 @@ func (this *WUID) LoadH24FromMongo(newClient NewClient, dbName, coll, docID stri
 	if err != nil {
 		return err
 	}
-	h24 := uint64(doc.N)
-	if err = this.w.VerifyH24(h24); err != nil {
+	h28 := uint64(doc.N)
+	if err = this.w.VerifyH28(h28); err != nil {
 		return err
 	}
 
-	this.w.Reset(h24 << 40)
-	this.w.Logger.Info(fmt.Sprintf("<wuid> new h24: %d. tag: %s", h24, this.w.Tag))
+	this.w.Reset(h28 << 36)
+	this.w.Logger.Info(fmt.Sprintf("<wuid> new h28: %d. tag: %s", h28, this.w.Tag))
 
 	this.w.Lock()
 	defer this.w.Unlock()
@@ -116,13 +116,13 @@ func (this *WUID) LoadH24FromMongo(newClient NewClient, dbName, coll, docID stri
 		return nil
 	}
 	this.w.Renew = func() error {
-		return this.LoadH24FromMongo(newClient, dbName, coll, docID)
+		return this.LoadH28FromMongo(newClient, dbName, coll, docID)
 	}
 
 	return nil
 }
 
-// RenewNow reacquires the high 24 bits from your data store immediately
+// RenewNow reacquires the high 28 bits from your data store immediately
 func (this *WUID) RenewNow() error {
 	return this.w.RenewNow()
 }
@@ -136,7 +136,7 @@ func WithSection(section uint8) Option {
 	return Option(internal.WithSection(section))
 }
 
-// WithH24Verifier sets your own h24 verifier
-func WithH24Verifier(cb func(h24 uint64) error) Option {
-	return Option(internal.WithH24Verifier(cb))
+// WithH28Verifier sets your own h28 verifier
+func WithH28Verifier(cb func(h28 uint64) error) Option {
+	return Option(internal.WithH28Verifier(cb))
 }

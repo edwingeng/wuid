@@ -122,7 +122,7 @@ func (this *WUID) loadH24FromPg(dsn, table string) error {
 	}
 
 	h24 := uint64(lastInsertedID)
-	if err = this.w.VerifyH24(h24); err != nil {
+	if err = this.w.VerifyH28(h24); err != nil {
 		return err
 	}
 
@@ -156,7 +156,7 @@ func WithSection(section uint8) Option {
 	return Option(internal.WithSection(section))
 }
 
-// WithH24Verifier sets your own h24 verifier
+// WithH28Verifier sets your own h24 verifier
 func WithH24Verifier(cb func(h24 uint64) error) Option {
-	return Option(internal.WithH24Verifier(cb))
+	return Option(internal.WithH28Verifier(cb))
 }

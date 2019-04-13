@@ -1,7 +1,7 @@
 # Overview
 - WUID is a unique number generator, while it is not a UUID implementation.
 - WUID is **10-135** times faster than UUID and **4600** times faster than generating unique numbers with Redis.
-- WUID generates unique 64-bit integers in sequence. The high 24 bits are loaded from a data store. By now, Redis, MySQL, PostgreSQL, and MongoDB are supported.
+- WUID generates unique 64-bit integers in sequence. The high 28 bits are loaded from a data store. By now, Redis, MySQL, PostgreSQL, and MongoDB are supported.
 
 # Benchmarks
 ```
@@ -24,7 +24,7 @@ BenchmarkSnowflake    5000000          244 ns/op           0 B/op          0 all
 - Being unique within a data center
 - Being unique globally if all data centers share the same data store, or they use different section IDs
 - Being capable of generating 100M unique numbers in a single second
-- Auto-renew when the low 40 bits are about to run out
+- Auto-renew when the low 36 bits are about to run out
 
 # Install
 ``` bash
@@ -44,7 +44,7 @@ newClient := func() (redis.Cmdable, bool, error) {
 
 // Setup
 g := NewWUID("default", nil)
-_ = g.LoadH24FromRedis(newClient, "wuid")
+_ = g.LoadH28FromRedis(newClient, "wuid")
 
 // Generate
 for i := 0; i < 10; i++ {
@@ -64,7 +64,7 @@ newDB := func() (*sql.DB, bool, error) {
 
 // Setup
 g := NewWUID("default", nil)
-_ = g.LoadH24FromMysql(newDB, "wuid")
+_ = g.LoadH28FromMysql(newDB, "wuid")
 
 // Generate
 for i := 0; i < 10; i++ {
@@ -84,7 +84,7 @@ newClient := func() (*mongo.Client, bool, error) {
 
 // Setup
 g := NewWUID("default", nil)
-_ = g.LoadH24FromMongo(newClient, "test", "wuid", "default")
+_ = g.LoadH28FromMongo(newClient, "test", "wuid", "default")
 
 // Generate
 for i := 0; i < 10; i++ {
@@ -98,7 +98,7 @@ import "github.com/edwingeng/wuid/callback"
 
 // Setup
 g := NewWUID("default", nil)
-_ = g.LoadH24WithCallback(func() (uint64, func(), error) {
+_ = g.LoadH28WithCallback(func() (uint64, func(), error) {
     resp, err := http.Get("https://stackoverflow.com/")
     if resp != nil {
         defer func() {
@@ -139,8 +139,8 @@ You can specify a custom section ID for the generated numbers with `wuid.WithSec
 
 # Best practices
 - Use different keys/tables/docs for different purposes.
-- Pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed", which means that the low 40 bits are about to run out in hours or hundreds of hours, and WUID fails to get a new number from your data store.
-- Give a reasonalbe bound to the high 24 bits with `wuid.WithH24Verifier`.
+- Pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed", which means that the low 36 bits are about to run out in hours or hundreds of hours, and WUID fails to get a new number from your data store.
+- Give a reasonalbe bound to the high 28 bits with `wuid.WithH28Verifier`.
 
 # Special thanks
 - [dustinfog](https://github.com/dustinfog)

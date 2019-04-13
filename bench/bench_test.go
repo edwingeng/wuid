@@ -32,7 +32,7 @@ func BenchmarkWUID(b *testing.B) {
 	}
 
 	g := wuid.NewWUID("default", sl)
-	err := g.LoadH24FromRedis(newClient, key)
+	err := g.LoadH28FromRedis(newClient, key)
 	if err != nil {
 		b.Fatal(err)
 	}

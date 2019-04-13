@@ -64,7 +64,7 @@ func connect(addr, user, pass, dbName string) (*sql.DB, error) {
 	return db, nil
 }
 
-func TestWUID_LoadH24FromMysql(t *testing.T) {
+func TestWUID_LoadH28FromMysql(t *testing.T) {
 	addr, user, pass, dbName, table := getMysqlConfig()
 	newDB := func() (*sql.DB, bool, error) {
 		db, err := connect(addr, user, pass, dbName)
@@ -74,14 +74,14 @@ func TestWUID_LoadH24FromMysql(t *testing.T) {
 	var nextValue uint64
 	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
-		err := g.LoadH24FromMysql(newDB, table)
+		err := g.LoadH28FromMysql(newDB, table)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if i == 0 {
 			nextValue = atomic.LoadUint64(&g.w.N)
 		} else {
-			nextValue = ((nextValue >> 40) + 1) << 40
+			nextValue = ((nextValue >> 36) + 1) << 36
 		}
 		if atomic.LoadUint64(&g.w.N) != nextValue {
 			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&g.w.N), nextValue, i)
@@ -92,9 +92,9 @@ func TestWUID_LoadH24FromMysql(t *testing.T) {
 	}
 }
 
-func TestWUID_LoadH24FromMysql_Error(t *testing.T) {
+func TestWUID_LoadH28FromMysql_Error(t *testing.T) {
 	g := NewWUID("default", sl)
-	if g.LoadH24FromMysql(nil, "") == nil {
+	if g.LoadH28FromMysql(nil, "") == nil {
 		t.Fatal("table is not properly checked")
 	}
 }
@@ -110,7 +110,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 	}
 
 	g := NewWUID("default", sl)
-	err = g.LoadH24FromMysql(newDB, table)
+	err = g.LoadH28FromMysql(newDB, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,18 +118,18 @@ func TestWUID_Next_Renew(t *testing.T) {
 	n1 := g.Next()
 	kk := ((internal.CriticalValue + internal.RenewInterval) & ^internal.RenewInterval) - 1
 
-	g.w.Reset((n1 >> 40 << 40) | kk)
+	g.w.Reset((n1 >> 36 << 36) | kk)
 	g.Next()
 	time.Sleep(time.Millisecond * 200)
 	n2 := g.Next()
 
-	g.w.Reset((n2 >> 40 << 40) | kk)
+	g.w.Reset((n2 >> 36 << 36) | kk)
 	g.Next()
 	time.Sleep(time.Millisecond * 200)
 	n3 := g.Next()
 
-	if n2>>40 == n1>>40 || n3>>40 == n2>>40 {
-		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>40, n2>>40, n3>>40)
+	if n2>>36 == n1>>36 || n3>>36 == n2>>36 {
+		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>36, n2>>36, n3>>36)
 	}
 }
 
@@ -144,7 +144,7 @@ func TestWithSection(t *testing.T) {
 	}
 
 	g := NewWUID("default", sl, WithSection(15))
-	err = g.LoadH24FromMysql(newDB, table)
+	err = g.LoadH28FromMysql(newDB, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func Example() {
 
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24FromMysql(newDB, "wuid")
+	_ = g.LoadH28FromMysql(newDB, "wuid")
 
 	// Generate
 	for i := 0; i < 10; i++ {

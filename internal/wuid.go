@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	// CriticalValue indicates when the low 40 bits are about to run out
-	CriticalValue uint64 = (1 << 40) * 80 / 100
+	// CriticalValue indicates when the low 36 bits are about to run out
+	CriticalValue uint64 = (1 << 36) * 80 / 100
 	// RenewInterval indicates how often renew retries are performed
-	RenewInterval uint64 = 0x03FFFFFFFF
+	RenewInterval uint64 = 0x3FFFFFFF
 	// PanicValue indicates when Next starts to panic
-	PanicValue uint64 = (1 << 40) * 96 / 100
+	PanicValue uint64 = (1 << 36) * 96 / 100
 )
 
 // WUID is for internal use only.
@@ -25,7 +25,7 @@ type WUID struct {
 	Tag         string
 	Logger      Logger
 	Renew       func() error
-	H24Verifier func(h24 uint64) error
+	H28Verifier func(h28 uint64) error
 }
 
 // NewWUID is for internal use only.
@@ -45,11 +45,12 @@ func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
 // Next is for internal use only.
 func (this *WUID) Next() uint64 {
 	x := atomic.AddUint64(&this.N, 1)
-	if x&0xFFFFFFFFFF >= PanicValue {
-		atomic.StoreUint64(&this.N, 0xFFFFFFFFFF)
-		panic("<wuid> the low 40 bits are about to run out")
+	v := x & 0xFFFFFFFFF
+	if v >= PanicValue {
+		atomic.StoreUint64(&this.N, 0xFFFFFFFFF)
+		panic("<wuid> the low 36 bits are about to run out")
 	}
-	if x&0xFFFFFFFFFF >= CriticalValue && x&RenewInterval == 0 {
+	if v >= CriticalValue && v&RenewInterval == 0 {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
@@ -68,7 +69,7 @@ func (this *WUID) Next() uint64 {
 	return x
 }
 
-// RenewNow reacquires the high 24 bits from your data store immediately
+// RenewNow reacquires the high 28 bits from your data store immediately
 func (this *WUID) RenewNow() error {
 	this.Lock()
 	renew := this.Renew
@@ -86,24 +87,24 @@ func (this *WUID) Reset(n uint64) {
 	}
 }
 
-// VerifyH24 is for internal use only.
-func (this *WUID) VerifyH24(h24 uint64) error {
-	if h24 == 0 {
-		return errors.New("the h24 should not be 0. tag: " + this.Tag)
+// VerifyH28 is for internal use only.
+func (this *WUID) VerifyH28(h28 uint64) error {
+	if h28 == 0 {
+		return errors.New("the h28 should not be 0. tag: " + this.Tag)
 	}
 
 	if this.Section == 0 {
-		if h24 > 0xFFFFFF {
-			return errors.New("the h24 should not exceed 0xFFFFFF. tag: " + this.Tag)
+		if h28 > 0x0FFFFFFF {
+			return errors.New("the h28 should not exceed 0x0FFFFFFF. tag: " + this.Tag)
 		}
 	} else {
-		if h24 > 0x0FFFFF {
-			return errors.New("the h20 should not exceed 0x0FFFFF. tag: " + this.Tag)
+		if h28 > 0x00FFFFFF {
+			return errors.New("the h28 should not exceed 0x00FFFFFF. tag: " + this.Tag)
 		}
 	}
 
-	if this.H24Verifier != nil {
-		if err := this.H24Verifier(h24); err != nil {
+	if this.H28Verifier != nil {
+		if err := this.H28Verifier(h28); err != nil {
 			return err
 		}
 	}
@@ -140,9 +141,9 @@ func WithSection(section uint8) Option {
 	}
 }
 
-// WithH24Verifier is for internal use only.
-func WithH24Verifier(cb func(h24 uint64) error) Option {
+// WithH28Verifier is for internal use only.
+func WithH28Verifier(cb func(h28 uint64) error) Option {
 	return func(w *WUID) {
-		w.H24Verifier = cb
+		w.H28Verifier = cb
 	}
 }

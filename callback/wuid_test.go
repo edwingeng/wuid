@@ -17,45 +17,45 @@ func (this *simpleLogger) Warn(args ...interface{}) {}
 
 var sl = &simpleLogger{}
 
-func TestWUID_LoadH24WithCallback_Error(t *testing.T) {
+func TestWUID_LoadH28WithCallback_Error(t *testing.T) {
 	var err error
 	g := NewWUID("default", sl)
-	err = g.LoadH24WithCallback(nil)
+	err = g.LoadH28WithCallback(nil)
 	if err == nil {
-		t.Fatal("LoadH24WithCallback should fail when cb is nil")
+		t.Fatal("LoadH28WithCallback should fail when cb is nil")
 	}
 
-	err = g.LoadH24WithCallback(func() (uint64, func(), error) {
+	err = g.LoadH28WithCallback(func() (uint64, func(), error) {
 		return 0, nil, errors.New("foo")
 	})
 	if err == nil {
-		t.Fatal("LoadH24WithCallback should fail when cb returns an error")
+		t.Fatal("LoadH28WithCallback should fail when cb returns an error")
 	}
 
-	err = g.LoadH24WithCallback(func() (uint64, func(), error) {
+	err = g.LoadH28WithCallback(func() (uint64, func(), error) {
 		return 0, nil, nil
 	})
 	if err == nil {
-		t.Fatal("LoadH24WithCallback should fail when cb returns an invalid h24")
+		t.Fatal("LoadH28WithCallback should fail when cb returns an invalid h28")
 	}
 }
 
-func TestWUID_LoadH24WithCallback(t *testing.T) {
-	var h24, counter uint64
+func TestWUID_LoadH28WithCallback(t *testing.T) {
+	var h28, counter uint64
 	done := func() {
 		counter++
 	}
 	cb := func() (uint64, func(), error) {
-		return atomic.AddUint64(&h24, 1), done, nil
+		return atomic.AddUint64(&h28, 1), done, nil
 	}
 
 	g := NewWUID("default", sl)
 	for i := 0; i < 1000; i++ {
-		err := g.LoadH24WithCallback(cb)
+		err := g.LoadH28WithCallback(cb)
 		if err != nil {
 			t.Fatal(err)
 		}
-		v := (uint64(i) + 1) << 40
+		v := (uint64(i) + 1) << 36
 		if atomic.LoadUint64(&g.w.N) != v {
 			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&g.w.N), v, i)
 		}
@@ -69,19 +69,19 @@ func TestWUID_LoadH24WithCallback(t *testing.T) {
 	}
 }
 
-func TestWUID_LoadH24WithCallback_Section(t *testing.T) {
-	var h24 uint64
+func TestWUID_LoadH28WithCallback_Section(t *testing.T) {
+	var h28 uint64
 	cb := func() (uint64, func(), error) {
-		return atomic.AddUint64(&h24, 1), nil, nil
+		return atomic.AddUint64(&h28, 1), nil, nil
 	}
 
 	g := NewWUID("default", sl, WithSection(1))
 	for i := 0; i < 1000; i++ {
-		err := g.LoadH24WithCallback(cb)
+		err := g.LoadH28WithCallback(cb)
 		if err != nil {
 			t.Fatal(err)
 		}
-		v := (uint64(i) + 1 + 0x100000) << 40
+		v := (uint64(i) + 1 + 0x1000000) << 36
 		if atomic.LoadUint64(&g.w.N) != v {
 			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&g.w.N), v, i)
 		}
@@ -91,28 +91,28 @@ func TestWUID_LoadH24WithCallback_Section(t *testing.T) {
 	}
 }
 
-func TestWUID_LoadH24WithCallback_Same(t *testing.T) {
+func TestWUID_LoadH28WithCallback_Same(t *testing.T) {
 	cb := func() (uint64, func(), error) {
 		return 100, nil, nil
 	}
 
 	g1 := NewWUID("default", sl)
-	_ = g1.LoadH24WithCallback(cb)
-	if err := g1.LoadH24WithCallback(cb); err == nil {
-		t.Fatal("LoadH24WithCallback should return an error")
+	_ = g1.LoadH28WithCallback(cb)
+	if err := g1.LoadH28WithCallback(cb); err == nil {
+		t.Fatal("LoadH28WithCallback should return an error")
 	}
 
 	g2 := NewWUID("default", sl, WithSection(1))
-	_ = g2.LoadH24WithCallback(cb)
-	if err := g2.LoadH24WithCallback(cb); err == nil {
-		t.Fatal("LoadH24WithCallback should return an error")
+	_ = g2.LoadH28WithCallback(cb)
+	if err := g2.LoadH28WithCallback(cb); err == nil {
+		t.Fatal("LoadH28WithCallback should return an error")
 	}
 }
 
 func Example() {
 	// Setup
 	g := NewWUID("default", nil)
-	_ = g.LoadH24WithCallback(func() (uint64, func(), error) {
+	_ = g.LoadH28WithCallback(func() (uint64, func(), error) {
 		resp, err := http.Get("https://stackoverflow.com/")
 		if resp != nil {
 			defer func() {
