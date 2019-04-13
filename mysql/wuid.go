@@ -13,7 +13,7 @@ import (
 	"fmt"
 
 	"github.com/edwingeng/wuid/internal"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" //...
 )
 
 /*

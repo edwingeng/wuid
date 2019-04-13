@@ -1,32 +1,35 @@
 #!/usr/bin/env bash
 
 [[ "$TRACE" ]] && set -x
-pushd `dirname $0` > /dev/null
+pushd `dirname "$0"` > /dev/null
 trap __EXIT EXIT
 
+colorful=false
 tput setaf 7 > /dev/null 2>&1
-colorful=$?
+if [[ $? -eq 0 ]]; then
+    colorful=true
+fi
 
 function __EXIT() {
     popd > /dev/null
 }
 
 function printError() {
-    [[ $colorful -eq 0 ]] && tput setaf 1
-    >&2  echo "Error: $@"
-    [[ $colorful -eq 0 ]] && tput setaf 7
+    $colorful && tput setaf 1
+    >&2 echo "Error: $@"
+    $colorful && tput setaf 7
 }
 
 function printImportantMessage() {
-    [[ $colorful -eq 0 ]] && tput setaf 3
-    echo "$@"
-    [[ $colorful -eq 0 ]] && tput setaf 7
+    $colorful && tput setaf 3
+    >&2 echo "$@"
+    $colorful && tput setaf 7
 }
 
 function printUsage() {
-    [[ $colorful -eq 0 ]] && tput setaf 3
-    >&2  echo "$@"
-    [[ $colorful -eq 0 ]] && tput setaf 7
+    $colorful && tput setaf 3
+    >&2 echo "$@"
+    $colorful && tput setaf 7
 }
 
 go test github.com/edwingeng/wuid/bench -bench=. -benchmem -cpu=1
