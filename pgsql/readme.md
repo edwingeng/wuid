@@ -1,4 +1,4 @@
-# The postgres version need to upgrade according to the new design. Please help if you are familier with postgres.
+# The postgres version needs to be upgraded according to the new design. Please help if you are familier with postgres.
 
 # Overview
 
