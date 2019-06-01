@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/snowflake"
-	"github.com/edwingeng/wuid/redis"
+	"github.com/edwingeng/wuid/redis/wuid"
 	"github.com/go-redis/redis"
 	"github.com/satori/go.uuid"
 )

@@ -32,13 +32,15 @@ function printUsage() {
     $colorful && tput setaf 7
 }
 
-dirs='bench callback internal mongo mysql redis'
+root='github.com/edwingeng/wuid'
+dirs='callback mongo mysql redis'
 
 for d in $dirs; do
-    go vet "github.com/edwingeng/wuid/$d"
+    go vet "$root/$d/wuid"
 done
+go vet "$root/internal"
+go vet "$root/bench"
 
-errcheck github.com/edwingeng/wuid/... \
-    | ag -v '[ \t]*defer'
+errcheck "$root"/... | ag -v '[ \t]*defer'
 
 golint $dirs | ag -v 'receiver name should be a reflection of its identity'
