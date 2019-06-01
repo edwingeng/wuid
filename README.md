@@ -34,7 +34,7 @@ go get -u github.com/edwingeng/wuid
 # Usage examples
 ### Redis
 ``` go
-import "github.com/edwingeng/wuid/redis"
+import "github.com/edwingeng/wuid/redis/wuid"
 
 newClient := func() (redis.Cmdable, bool, error) {
     var client redis.Cmdable
@@ -54,7 +54,7 @@ for i := 0; i < 10; i++ {
 
 ### MySQL
 ``` go
-import "github.com/edwingeng/wuid/mysql"
+import "github.com/edwingeng/wuid/mysql/wuid"
 
 newDB := func() (*sql.DB, bool, error) {
     var db *sql.DB
@@ -74,7 +74,7 @@ for i := 0; i < 10; i++ {
 
 ### MongoDB
 ``` go
-import "github.com/edwingeng/wuid/mongo"
+import "github.com/edwingeng/wuid/mongo/wuid"
 
 newClient := func() (*mongo.Client, bool, error) {
     var client *mongo.Client
@@ -94,7 +94,7 @@ for i := 0; i < 10; i++ {
 
 ### Callback
 ``` go
-import "github.com/edwingeng/wuid/callback"
+import "github.com/edwingeng/wuid/callback/wuid"
 
 // Setup
 g := NewWUID("default", nil)
