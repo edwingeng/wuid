@@ -14,4 +14,9 @@ function __EXIT() {
     popd > /dev/null
 }
 
-docker run -d --name wuid-mongo -p 27017:27017 mongo:3.6
+if [[ `docker ps -q -f name=wuid-mysql` == '' ]]; then
+    docker run -d --name wuid-mongo -p 27017:27017 mongo:3.6
+	[[ $? -ne 0 ]] && exit 1
+fi
+
+:

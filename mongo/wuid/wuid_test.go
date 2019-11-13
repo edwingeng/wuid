@@ -27,7 +27,7 @@ func getMongoConfig() (string, string, string, string) {
 func connect(addr string) (*mongo.Client, error) {
 	ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel1()
-	uri := fmt.Sprintf("mongodb://%s:27017", addr)
+	uri := fmt.Sprintf("mongodb://%s", addr)
 	return mongo.Connect(ctx1, options.Client().ApplyURI(uri))
 }
 
