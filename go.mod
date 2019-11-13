@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/edwingeng/slog v0.0.0-20191011125256-3ac46ac3623d
 	github.com/go-redis/redis v6.15.6+incompatible
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/go-stack/stack v1.8.0 // indirect

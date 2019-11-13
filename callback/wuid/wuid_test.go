@@ -8,18 +8,13 @@ import (
 	"net/http"
 	"sync/atomic"
 	"testing"
+
+	"github.com/edwingeng/slog"
 )
-
-type simpleLogger struct{}
-
-func (this *simpleLogger) Info(args ...interface{}) {}
-func (this *simpleLogger) Warn(args ...interface{}) {}
-
-var sl = &simpleLogger{}
 
 func TestWUID_LoadH28WithCallback_Error(t *testing.T) {
 	var err error
-	g := NewWUID("default", sl)
+	g := NewWUID("default", slog.NewDumbLogger())
 	err = g.LoadH28WithCallback(nil)
 	if err == nil {
 		t.Fatal("LoadH28WithCallback should fail when cb is nil")
@@ -49,7 +44,7 @@ func TestWUID_LoadH28WithCallback(t *testing.T) {
 		return atomic.AddUint64(&h28, 1), done, nil
 	}
 
-	g := NewWUID("default", sl)
+	g := NewWUID("default", slog.NewDumbLogger())
 	for i := 0; i < 1000; i++ {
 		err := g.LoadH28WithCallback(cb)
 		if err != nil {
@@ -75,7 +70,7 @@ func TestWUID_LoadH28WithCallback_Section(t *testing.T) {
 		return atomic.AddUint64(&h28, 1), nil, nil
 	}
 
-	g := NewWUID("default", sl, WithSection(1))
+	g := NewWUID("default", slog.NewDumbLogger(), WithSection(1))
 	for i := 0; i < 1000; i++ {
 		err := g.LoadH28WithCallback(cb)
 		if err != nil {
@@ -96,13 +91,13 @@ func TestWUID_LoadH28WithCallback_Same(t *testing.T) {
 		return 100, nil, nil
 	}
 
-	g1 := NewWUID("default", sl)
+	g1 := NewWUID("default", slog.NewDumbLogger())
 	_ = g1.LoadH28WithCallback(cb)
 	if err := g1.LoadH28WithCallback(cb); err == nil {
 		t.Fatal("LoadH28WithCallback should return an error")
 	}
 
-	g2 := NewWUID("default", sl, WithSection(1))
+	g2 := NewWUID("default", slog.NewDumbLogger(), WithSection(1))
 	_ = g2.LoadH28WithCallback(cb)
 	if err := g2.LoadH28WithCallback(cb); err == nil {
 		t.Fatal("LoadH28WithCallback should return an error")

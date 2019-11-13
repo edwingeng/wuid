@@ -8,17 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edwingeng/slog"
 	"github.com/edwingeng/wuid/internal"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-type simpleLogger struct{}
-
-func (this *simpleLogger) Info(args ...interface{}) {}
-func (this *simpleLogger) Warn(args ...interface{}) {}
-
-var sl = &simpleLogger{}
 
 func getMongoConfig() (string, string, string, string) {
 	return "127.0.0.1:27017", "test", "wuid", "default"
@@ -39,7 +33,7 @@ func TestWUID_LoadH28FromMongo(t *testing.T) {
 	}
 
 	var nextValue uint64
-	g := NewWUID(docID, sl)
+	g := NewWUID(docID, slog.NewDumbLogger())
 	for i := 0; i < 1000; i++ {
 		err := g.LoadH28FromMongo(newClient, dbName, coll, docID)
 		if err != nil {
@@ -61,7 +55,7 @@ func TestWUID_LoadH28FromMongo(t *testing.T) {
 
 func TestWUID_LoadH28FromMongo_Error(t *testing.T) {
 	_, dbName, coll, docID := getMongoConfig()
-	g := NewWUID(docID, sl)
+	g := NewWUID(docID, slog.NewDumbLogger())
 
 	if g.LoadH28FromMongo(nil, "", coll, docID) == nil {
 		t.Fatal("dbName is not properly checked")
@@ -84,7 +78,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 		return client, false, nil
 	}
 
-	g := NewWUID(docID, sl)
+	g := NewWUID(docID, slog.NewDumbLogger())
 	err = g.LoadH28FromMongo(newClient, dbName, coll, docID)
 	if err != nil {
 		t.Fatal(err)
@@ -118,7 +112,7 @@ func TestWithSection(t *testing.T) {
 		return client, false, nil
 	}
 
-	g := NewWUID(docID, sl, WithSection(15))
+	g := NewWUID(docID, slog.NewDumbLogger(), WithSection(15))
 	err = g.LoadH28FromMongo(newClient, dbName, coll, docID)
 	if err != nil {
 		t.Fatal(err)

@@ -2,13 +2,13 @@ package internal
 
 import (
 	"errors"
-	"fmt"
-	"log"
 	"sort"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/edwingeng/slog"
 )
 
 func TestWUID_Next(t *testing.T) {
@@ -56,31 +56,6 @@ func TestWUID_Next_Concurrent(t *testing.T) {
 	}
 }
 
-type simpleLogger struct {
-	numInfo int
-	numWarn int
-}
-
-func (this *simpleLogger) Info(args ...interface{}) {
-	this.numInfo++
-	if !testing.Verbose() {
-		return
-	}
-	str := "INFO\t"
-	str += fmt.Sprint(args...)
-	log.Println(str)
-}
-
-func (this *simpleLogger) Warn(args ...interface{}) {
-	this.numWarn++
-	if !testing.Verbose() {
-		return
-	}
-	str := "WARN\t"
-	str += fmt.Sprint(args...)
-	log.Println(str)
-}
-
 func TestWUID_Next_Panic(t *testing.T) {
 	defer func() {
 		_ = recover()
@@ -94,8 +69,8 @@ func TestWUID_Next_Panic(t *testing.T) {
 }
 
 func TestWUID_Next_Renew(t *testing.T) {
-	logger := &simpleLogger{}
-	g := NewWUID("default", logger)
+	scav := slog.NewScavenger()
+	g := NewWUID("default", scav)
 	g.Renew = func() error {
 		g.Reset(((atomic.LoadUint64(&g.N) >> 36) + 1) << 36)
 		return nil
@@ -117,14 +92,22 @@ func TestWUID_Next_Renew(t *testing.T) {
 	if n2>>36 == n1>>36 || n3>>36 == n2>>36 {
 		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>36, n2>>36, n3>>36)
 	}
-	if logger.numInfo != 2 {
-		t.Fatalf("there should be 2 renew logs of the info type. actual: %d", logger.numInfo)
+
+	var numInfo int
+	scav.Filter(func(level, msg string) bool {
+		if level == slog.LevelInfo {
+			numInfo++
+		}
+		return true
+	})
+	if numInfo != 2 {
+		t.Fatalf("there should be 2 renew logs of the info type. actual: %d", numInfo)
 	}
 }
 
 func TestWUID_Next_Renew_Fail(t *testing.T) {
-	logger := &simpleLogger{}
-	g := NewWUID("default", logger)
+	scav := slog.NewScavenger()
+	g := NewWUID("default", scav)
 	g.Renew = func() error {
 		return errors.New("foo")
 	}
@@ -142,13 +125,21 @@ func TestWUID_Next_Renew_Fail(t *testing.T) {
 	time.Sleep(time.Millisecond * 200)
 	g.Next()
 
-	if logger.numWarn != 2 {
-		t.Fatalf("there should be 2 renew logs of the warn type. actual: %d", logger.numWarn)
+	var numWarn int
+	scav = scav.Filter(func(level, msg string) bool {
+		if level == slog.LevelWarn {
+			numWarn++
+		}
+		return true
+	})
+	if numWarn != 2 {
+		t.Fatalf("there should be 2 renew logs of the warn type. actual: %d", numWarn)
 	}
 }
 
 func TestWUID_Next_Renew_Panic(t *testing.T) {
-	g := NewWUID("default", &simpleLogger{})
+	scav := slog.NewScavenger()
+	g := NewWUID("default", scav)
 	g.Renew = func() error {
 		panic("foo")
 	}

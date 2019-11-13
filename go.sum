@@ -6,6 +6,8 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/edwingeng/slog v0.0.0-20191011125256-3ac46ac3623d h1:/1paWA9ZxTiyOM10Em751o0wzv0I8Ikey8lRW5ijYIg=
+github.com/edwingeng/slog v0.0.0-20191011125256-3ac46ac3623d/go.mod h1:g3bFHx27qq2CKFvaeya0LS+cKa3dOiYrSdqHeAxWYT0=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/go-redis/redis v6.12.0+incompatible h1:s+64XI+z/RXqGHz2fQSgRJOEwqqSXeX3dliF7iVkMbE=

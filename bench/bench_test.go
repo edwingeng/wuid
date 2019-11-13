@@ -6,17 +6,11 @@ import (
 	"time"
 
 	"github.com/bwmarrin/snowflake"
+	"github.com/edwingeng/slog"
 	"github.com/edwingeng/wuid/redis/wuid"
 	"github.com/go-redis/redis"
 	"github.com/satori/go.uuid"
 )
-
-type simpleLogger struct{}
-
-func (this *simpleLogger) Info(args ...interface{}) {}
-func (this *simpleLogger) Warn(args ...interface{}) {}
-
-var sl = &simpleLogger{}
 
 func getRedisConfig() (string, string, string) {
 	return "127.0.0.1:6379", "", "wuid"
@@ -31,7 +25,7 @@ func BenchmarkWUID(b *testing.B) {
 		}), true, nil
 	}
 
-	g := wuid.NewWUID("default", sl)
+	g := wuid.NewWUID("default", slog.NewDumbLogger())
 	err := g.LoadH28FromRedis(newClient, key)
 	if err != nil {
 		b.Fatal(err)

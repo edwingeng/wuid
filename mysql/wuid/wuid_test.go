@@ -8,16 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edwingeng/slog"
 	"github.com/edwingeng/wuid/internal"
 	_ "github.com/go-sql-driver/mysql"
 )
-
-type simpleLogger struct{}
-
-func (this *simpleLogger) Info(args ...interface{}) {}
-func (this *simpleLogger) Warn(args ...interface{}) {}
-
-var sl = &simpleLogger{}
 
 func init() {
 	addr, user, pass, dbName, table := getMysqlConfig()
@@ -72,7 +66,7 @@ func TestWUID_LoadH28FromMysql(t *testing.T) {
 	}
 
 	var nextValue uint64
-	g := NewWUID("default", sl)
+	g := NewWUID("default", slog.NewDumbLogger())
 	for i := 0; i < 1000; i++ {
 		err := g.LoadH28FromMysql(newDB, table)
 		if err != nil {
@@ -93,7 +87,7 @@ func TestWUID_LoadH28FromMysql(t *testing.T) {
 }
 
 func TestWUID_LoadH28FromMysql_Error(t *testing.T) {
-	g := NewWUID("default", sl)
+	g := NewWUID("default", slog.NewDumbLogger())
 	if g.LoadH28FromMysql(nil, "") == nil {
 		t.Fatal("table is not properly checked")
 	}
@@ -109,7 +103,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 		return db, false, nil
 	}
 
-	g := NewWUID("default", sl)
+	g := NewWUID("default", slog.NewDumbLogger())
 	err = g.LoadH28FromMysql(newDB, table)
 	if err != nil {
 		t.Fatal(err)
@@ -143,7 +137,7 @@ func TestWithSection(t *testing.T) {
 		return db, false, nil
 	}
 
-	g := NewWUID("default", sl, WithSection(15))
+	g := NewWUID("default", slog.NewDumbLogger(), WithSection(15))
 	err = g.LoadH28FromMysql(newDB, table)
 	if err != nil {
 		t.Fatal(err)

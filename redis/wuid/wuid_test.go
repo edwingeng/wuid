@@ -8,18 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edwingeng/slog"
 	"github.com/edwingeng/wuid/internal"
 	"github.com/go-redis/redis"
 )
 
 var bRedisCluster = flag.Bool("cluster", false, "")
-
-type simpleLogger struct{}
-
-func (this *simpleLogger) Info(args ...interface{}) {}
-func (this *simpleLogger) Warn(args ...interface{}) {}
-
-var sl = &simpleLogger{}
 
 func getRedisConfig() (string, string, string) {
 	return "127.0.0.1:6379", "", "wuid"
@@ -53,7 +47,7 @@ func TestWUID_LoadH28FromRedis(t *testing.T) {
 		}), true, nil
 	}
 
-	g := NewWUID("default", sl)
+	g := NewWUID("default", slog.NewDumbLogger())
 	for i := 0; i < 1000; i++ {
 		err = g.LoadH28FromRedis(newClient, key)
 		if err != nil {
@@ -74,7 +68,7 @@ func TestWUID_LoadH28FromRedis_Error(t *testing.T) {
 		return
 	}
 
-	g := NewWUID("default", sl)
+	g := NewWUID("default", slog.NewDumbLogger())
 	if g.LoadH28FromRedis(nil, "") == nil {
 		t.Fatal("key is not properly checked")
 	}
@@ -101,7 +95,7 @@ func TestWUID_LoadH28FromRedisCluster(t *testing.T) {
 		return client, false, nil
 	}
 
-	g := NewWUID("default", sl)
+	g := NewWUID("default", slog.NewDumbLogger())
 	for i := 0; i < 1000; i++ {
 		err = g.LoadH28FromRedis(newClient, key)
 		if err != nil {
@@ -122,7 +116,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 		return
 	}
 
-	g := NewWUID("default", sl)
+	g := NewWUID("default", slog.NewDumbLogger())
 	addr, pass, key := getRedisConfig()
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
@@ -162,7 +156,7 @@ func TestWithSection(t *testing.T) {
 		return
 	}
 
-	g := NewWUID("default", sl, WithSection(15))
+	g := NewWUID("default", slog.NewDumbLogger(), WithSection(15))
 	addr, pass, key := getRedisConfig()
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,

@@ -9,21 +9,12 @@ package wuid
 
 import (
 	"errors"
-	"fmt"
 	"io"
 
+	"github.com/edwingeng/slog"
 	"github.com/edwingeng/wuid/internal"
 	"github.com/go-redis/redis"
 )
-
-/*
-Logger includes internal.Logger, while internal.Logger includes:
-	Info(args ...interface{})
-	Warn(args ...interface{})
-*/
-type Logger interface {
-	internal.Logger
-}
 
 // WUID is an extremely fast unique number generator.
 type WUID struct {
@@ -31,7 +22,7 @@ type WUID struct {
 }
 
 // NewWUID creates a new WUID instance.
-func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
+func NewWUID(tag string, logger slog.Logger, opts ...Option) *WUID {
 	var opts2 []internal.Option
 	for _, opt := range opts {
 		opts2 = append(opts2, internal.Option(opt))
@@ -74,7 +65,7 @@ func (this *WUID) LoadH28FromRedis(newClient NewClient, key string) error {
 	}
 
 	this.w.Reset(h28 << 36)
-	this.w.Logger.Info(fmt.Sprintf("<wuid> new h28: %d. tag: %s", h28, this.w.Tag))
+	this.w.Logger.Infof("<wuid> new h28: %d. tag: %s", h28, this.w.Tag)
 
 	this.w.Lock()
 	defer this.w.Unlock()

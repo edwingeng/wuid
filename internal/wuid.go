@@ -2,10 +2,10 @@ package internal
 
 import (
 	"errors"
-	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
+
+	"github.com/edwingeng/slog"
 )
 
 const (
@@ -23,18 +23,18 @@ type WUID struct {
 	Section     uint8
 	N           uint64
 	Tag         string
-	Logger      Logger
+	Logger      slog.Logger
 	Renew       func() error
 	H28Verifier func(h28 uint64) error
 }
 
 // NewWUID is for internal use only.
-func NewWUID(tag string, logger Logger, opts ...Option) *WUID {
+func NewWUID(tag string, logger slog.Logger, opts ...Option) *WUID {
 	w := &WUID{Tag: tag}
 	if logger != nil {
 		w.Logger = logger
 	} else {
-		w.Logger = defaultLogger{}
+		w.Logger = slog.NewConsoleLogger()
 	}
 	for _, opt := range opts {
 		opt(w)
@@ -54,15 +54,15 @@ func (this *WUID) Next() uint64 {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					this.Logger.Warn(fmt.Sprintf("<wuid> panic, renew failed. tag: %s, reason: %+v", this.Tag, r))
+					this.Logger.Warnf("<wuid> panic, renew failed. tag: %s, reason: %+v", this.Tag, r)
 				}
 			}()
 
 			err := this.RenewNow()
 			if err != nil {
-				this.Logger.Warn(fmt.Sprintf("<wuid> renew failed. tag: %s, reason: %+v", this.Tag, err))
+				this.Logger.Warnf("<wuid> renew failed. tag: %s, reason: %+v", this.Tag, err)
 			} else {
-				this.Logger.Info(fmt.Sprintf("<wuid> renew succeeded. tag: %s", this.Tag))
+				this.Logger.Infof("<wuid> renew succeeded. tag: %s", this.Tag)
 			}
 		}()
 	}
@@ -110,22 +110,6 @@ func (this *WUID) VerifyH28(h28 uint64) error {
 	}
 
 	return nil
-}
-
-// Logger is for internal use only.
-type Logger interface {
-	Info(args ...interface{})
-	Warn(args ...interface{})
-}
-
-type defaultLogger struct{}
-
-func (l defaultLogger) Info(args ...interface{}) {
-	log.Println(args...)
-}
-
-func (l defaultLogger) Warn(args ...interface{}) {
-	log.Println(args...)
 }
 
 // Option is for internal use only.
