@@ -84,6 +84,9 @@ func BenchmarkRedis(b *testing.B) {
 	client := redis.NewClient(&redis.Options{
 		Addr: "127.0.0.1:6379",
 	})
+	if err := client.Ping().Err(); err != nil {
+		b.Fatal(err)
+	}
 	defer func() {
 		_ = client.Close()
 	}()
