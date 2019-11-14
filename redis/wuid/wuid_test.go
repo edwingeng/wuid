@@ -53,9 +53,9 @@ func TestWUID_LoadH28FromRedis(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		v := (uint64(i) + 1) << 36
-		if atomic.LoadUint64(&g.w.N) != v {
-			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&g.w.N), v, i)
+		v := (int64(i) + 1) << 36
+		if atomic.LoadInt64(&g.w.N) != v {
+			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadInt64(&g.w.N), v, i)
 		}
 		for j := 0; j < rand.Intn(10); j++ {
 			g.Next()
@@ -101,9 +101,9 @@ func TestWUID_LoadH28FromRedisCluster(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		v := (uint64(i) + 1) << 36
-		if atomic.LoadUint64(&g.w.N) != v {
-			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&g.w.N), v, i)
+		v := (int64(i) + 1) << 36
+		if atomic.LoadInt64(&g.w.N) != v {
+			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadInt64(&g.w.N), v, i)
 		}
 		for j := 0; j < rand.Intn(10); j++ {
 			g.Next()
@@ -156,7 +156,7 @@ func TestWithSection(t *testing.T) {
 		return
 	}
 
-	g := NewWUID("default", slog.NewDumbLogger(), WithSection(15))
+	g := NewWUID("default", slog.NewDumbLogger(), WithSection(7))
 	addr, pass, key := getRedisConfig()
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
@@ -173,7 +173,7 @@ func TestWithSection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g.Next()>>60 != 15 {
+	if g.Next()>>60 != 7 {
 		t.Fatal("WithSection does not work as expected")
 	}
 }
