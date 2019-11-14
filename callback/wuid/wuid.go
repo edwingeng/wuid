@@ -9,8 +9,6 @@ package wuid
 
 import (
 	"errors"
-	"fmt"
-	"sync/atomic"
 
 	"github.com/edwingeng/slog"
 	"github.com/edwingeng/wuid/internal"
@@ -23,23 +21,18 @@ type WUID struct {
 
 // NewWUID creates a new WUID instance.
 func NewWUID(tag string, logger slog.Logger, opts ...Option) *WUID {
-	var opts2 []internal.Option
-	for _, opt := range opts {
-		opts2 = append(opts2, internal.Option(opt))
-	}
-	return &WUID{w: internal.NewWUID(tag, logger, opts2...)}
+	return &WUID{w: internal.NewWUID(tag, logger, opts...)}
 }
 
 // Next returns the next unique number.
-func (this *WUID) Next() uint64 {
+func (this *WUID) Next() int64 {
 	return this.w.Next()
 }
 
-type H28Callback func() (h28 uint64, done func(), err error)
+type H28Callback func() (h28 int64, done func(), err error)
 
-// LoadH28WithCallback calls cb to get a number, and then sets it as the high 28 bits of the unique
-// numbers that Next generates.
-// The number returned by cb should look like 0x000123, not 0x0001230000000000.
+// LoadH28WithCallback invokes cb to get a number, and then sets it as the high 28 bits of
+// the unique numbers that Next generates.
 func (this *WUID) LoadH28WithCallback(cb H28Callback) error {
 	if cb == nil {
 		return errors.New("cb cannot be nil. tag: " + this.w.Tag)
@@ -58,18 +51,9 @@ func (this *WUID) LoadH28WithCallback(cb H28Callback) error {
 	if err = this.w.VerifyH28(h28); err != nil {
 		return err
 	}
-	if this.w.Section == 0 {
-		if h28 == atomic.LoadUint64(&this.w.N)>>36 {
-			return fmt.Errorf("the h28 should be a different value other than %d. tag: %s", h28, this.w.Tag)
-		}
-	} else {
-		if h28 == (atomic.LoadUint64(&this.w.N)>>36)&0x0FFFFF {
-			return fmt.Errorf("the h28 should be a different value other than %d. tag: %s", h28, this.w.Tag)
-		}
-	}
 
 	this.w.Reset(h28 << 36)
-	this.w.Logger.Infof("<wuid> new h28: %d. tag: %s", h28, this.w.Tag)
+	this.w.Infof("<wuid> new h28: %d. tag: %s", h28, this.w.Tag)
 
 	this.w.Lock()
 	defer this.w.Unlock()
@@ -89,16 +73,15 @@ func (this *WUID) RenewNow() error {
 	return this.w.RenewNow()
 }
 
-// Option should never be used directly.
-type Option internal.Option
+type Option = internal.Option
 
-// WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 15].
+// WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 7].
 // It occupies the highest 4 bits of the numbers.
-func WithSection(section uint8) Option {
-	return Option(internal.WithSection(section))
+func WithSection(section int8) Option {
+	return internal.WithSection(section)
 }
 
 // WithH28Verifier sets your own h28 verifier
-func WithH28Verifier(cb func(h28 uint64) error) Option {
-	return Option(internal.WithH28Verifier(cb))
+func WithH28Verifier(cb func(h28 int64) error) Option {
+	return internal.WithH28Verifier(cb)
 }
