@@ -29,15 +29,11 @@ type WUID struct {
 
 // NewWUID creates a new WUID instance.
 func NewWUID(tag string, logger slog.Logger, opts ...Option) *WUID {
-	var opts2 []internal.Option
-	for _, opt := range opts {
-		opts2 = append(opts2, internal.Option(opt))
-	}
-	return &WUID{w: internal.NewWUID(tag, logger, opts2...)}
+	return &WUID{w: internal.NewWUID(tag, logger, opts...)}
 }
 
 // Next returns the next unique number.
-func (this *WUID) Next() uint64 {
+func (this *WUID) Next() int64 {
 	return this.w.Next()
 }
 
@@ -92,7 +88,7 @@ func (this *WUID) LoadH28FromMongo(newClient NewClient, dbName, coll, docID stri
 	if err != nil {
 		return err
 	}
-	h28 := uint64(doc.N)
+	h28 := int64(doc.N)
 	if err = this.w.VerifyH28(h28); err != nil {
 		return err
 	}
@@ -118,16 +114,15 @@ func (this *WUID) RenewNow() error {
 	return this.w.RenewNow()
 }
 
-// Option should never be used directly.
-type Option internal.Option
+type Option = internal.Option
 
-// WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 15].
+// WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 7].
 // It occupies the highest 4 bits of the numbers.
-func WithSection(section uint8) Option {
-	return Option(internal.WithSection(section))
+func WithSection(section int8) Option {
+	return internal.WithSection(section)
 }
 
 // WithH28Verifier sets your own h28 verifier
-func WithH28Verifier(cb func(h28 uint64) error) Option {
-	return Option(internal.WithH28Verifier(cb))
+func WithH28Verifier(cb func(h28 int64) error) Option {
+	return internal.WithH28Verifier(cb)
 }

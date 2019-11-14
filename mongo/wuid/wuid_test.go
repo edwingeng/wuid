@@ -32,7 +32,7 @@ func TestWUID_LoadH28FromMongo(t *testing.T) {
 		return client, true, err
 	}
 
-	var nextValue uint64
+	var nextValue int64
 	g := NewWUID(docID, slog.NewDumbLogger())
 	for i := 0; i < 1000; i++ {
 		err := g.LoadH28FromMongo(newClient, dbName, coll, docID)
@@ -40,12 +40,12 @@ func TestWUID_LoadH28FromMongo(t *testing.T) {
 			t.Fatal(err)
 		}
 		if i == 0 {
-			nextValue = atomic.LoadUint64(&g.w.N)
+			nextValue = atomic.LoadInt64(&g.w.N)
 		} else {
 			nextValue = ((nextValue >> 36) + 1) << 36
 		}
-		if atomic.LoadUint64(&g.w.N) != nextValue {
-			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadUint64(&g.w.N), nextValue, i)
+		if atomic.LoadInt64(&g.w.N) != nextValue {
+			t.Fatalf("g.w.N is %d, while it should be %d. i: %d", atomic.LoadInt64(&g.w.N), nextValue, i)
 		}
 		for j := 0; j < rand.Intn(10); j++ {
 			g.Next()
@@ -112,12 +112,12 @@ func TestWithSection(t *testing.T) {
 		return client, false, nil
 	}
 
-	g := NewWUID(docID, slog.NewDumbLogger(), WithSection(15))
+	g := NewWUID(docID, slog.NewDumbLogger(), WithSection(7))
 	err = g.LoadH28FromMongo(newClient, dbName, coll, docID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g.Next()>>60 != 15 {
+	if g.Next()>>60 != 7 {
 		t.Fatal("WithSection does not work as expected")
 	}
 }
