@@ -98,7 +98,7 @@ import "github.com/edwingeng/wuid/callback/wuid"
 
 // Setup
 g := NewWUID("default", nil)
-_ = g.LoadH28WithCallback(func() (uint64, func(), error) {
+_ = g.LoadH28WithCallback(func() (int64, func(), error) {
     resp, err := http.Get("https://stackoverflow.com/")
     if resp != nil {
         defer func() {
@@ -115,7 +115,7 @@ _ = g.LoadH28WithCallback(func() (uint64, func(), error) {
     }
 
     fmt.Printf("Page size: %d (%#06x)\n\n", len(bytes), len(bytes))
-    return uint64(len(bytes)), nil, nil
+    return int64(len(bytes)), nil, nil
 })
 
 // Generate
