@@ -84,7 +84,6 @@ func (this *WUID) RenewNow() error {
 type Option = internal.Option
 
 // WithSection adds a section ID to the generated numbers. The section ID must be in between [1, 7].
-// It occupies the highest 4 bits of the numbers.
 func WithSection(section int8) Option {
 	return internal.WithSection(section)
 }

@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS `wuid` (
 ```
 
 # Section ID
-You can specify a custom section ID for the generated numbers with `wuid.WithSection` when you call `wuid.NewWUID`. The section ID must be in between `[1, 7]`. It occupies the highest 4 bits of the generated numbers.
+You can specify a custom section ID for the generated numbers with `wuid.WithSection` when you call `wuid.NewWUID`. The section ID must be in between `[1, 7]`.
 
 # Best practices
 - Use different keys/tables/docs for different purposes.
