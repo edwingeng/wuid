@@ -1,5 +1,5 @@
 # Overview
-- WUID is a unique number generator, while it is not a UUID implementation.
+- WUID is a globally unique number generator, while it is NOT a UUID implementation.
 - WUID is **10-135** times faster than UUID and **4600** times faster than generating unique numbers with Redis.
 - WUID generates unique 64-bit integers in sequence. The high 28 bits are loaded from a data store. By now, Redis, MySQL, MongoDB and Callback are supported.
 
@@ -22,7 +22,7 @@ BenchmarkSnowflake    5000000          244 ns/op           0 B/op          0 all
 - Thread-safe
 - Being unique across time
 - Being unique within a data center
-- Being unique globally if all data centers share the same data store, or they use different section IDs
+- Being unique globally if all data centers share a same data store, or they use different section IDs
 - Being capable of generating 100M unique numbers in a single second
 - Auto-renew when the low 36 bits are about to run out
 
