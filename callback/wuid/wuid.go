@@ -41,11 +41,8 @@ func (this *WUID) LoadH28WithCallback(cb H28Callback) error {
 	h28, done, err := cb()
 	if err != nil {
 		return err
-	}
-	if done != nil {
-		defer func() {
-			done()
-		}()
+	} else if done != nil {
+		defer done()
 	}
 
 	if err = this.w.VerifyH28(h28); err != nil {
