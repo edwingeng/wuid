@@ -5,16 +5,17 @@
 
 # Benchmarks
 ```
-BenchmarkWUID       100000000           10.3 ns/op         0 B/op          0 allocs/op
-BenchmarkRand        50000000           24.6 ns/op         0 B/op          0 allocs/op
-BenchmarkTimestamp  100000000           12.3 ns/op         0 B/op          0 allocs/op
-BenchmarkUUID_V1     20000000          107 ns/op           0 B/op          0 allocs/op
-BenchmarkUUID_V2     20000000          106 ns/op           0 B/op          0 allocs/op
-BenchmarkUUID_V3      5000000          359 ns/op         144 B/op          4 allocs/op
-BenchmarkUUID_V4      1000000         1376 ns/op          16 B/op          1 allocs/op
-BenchmarkUUID_V5      3000000          424 ns/op         176 B/op          4 allocs/op
-BenchmarkRedis          30000        46501 ns/op         176 B/op          5 allocs/op
-BenchmarkSnowflake    5000000          244 ns/op           0 B/op          0 allocs/op
+BenchmarkWUID       187500764            6.38 ns/op        0 B/op          0 allocs/op
+BenchmarkRand       97180698            12.2 ns/op         0 B/op          0 allocs/op
+BenchmarkTimestamp  17126514            67.8 ns/op         0 B/op          0 allocs/op
+BenchmarkUUID_V1    11986558            99.6 ns/op         0 B/op          0 allocs/op
+BenchmarkUUID_V2    12017754           101 ns/op           0 B/op          0 allocs/op
+BenchmarkUUID_V3     4925020           242 ns/op         144 B/op          4 allocs/op
+BenchmarkUUID_V4    14184271            84.1 ns/op        16 B/op          1 allocs/op
+BenchmarkUUID_V5     4277338           274 ns/op         176 B/op          4 allocs/op
+BenchmarkRedis         35462         35646 ns/op         176 B/op          5 allocs/op
+BenchmarkSnowflake   4931476           244 ns/op           0 B/op          0 allocs/op
+BenchmarkULID       12458173            94.9 ns/op        16 B/op          1 allocs/op
 ```
 
 # Features

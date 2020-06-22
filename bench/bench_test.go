@@ -9,14 +9,24 @@ import (
 	"github.com/edwingeng/slog"
 	"github.com/edwingeng/wuid/redis/wuid"
 	"github.com/go-redis/redis"
+	"github.com/oklog/ulid"
 	"github.com/satori/go.uuid"
 )
+
+var vault struct {
+	x1 int64
+	x2 int
+	x3 uuid.UUID
+	x4 snowflake.ID
+	x5 ulid.ULID
+}
 
 func getRedisConfig() (string, string, string) {
 	return "127.0.0.1:6379", "", "wuid"
 }
 
 func BenchmarkWUID(b *testing.B) {
+	b.ReportAllocs()
 	addr, pass, key := getRedisConfig()
 	newClient := func() (client redis.Cmdable, autoDisconnect bool, err error) {
 		return redis.NewClient(&redis.Options{
@@ -33,54 +43,62 @@ func BenchmarkWUID(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		g.Next()
+		vault.x1 = g.Next()
 	}
 
 }
 
 func BenchmarkRand(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		rand.Int63()
+		vault.x1 = rand.Int63()
 	}
 }
 
 func BenchmarkTimestamp(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		time.Now().Nanosecond()
+		vault.x2 = time.Now().Nanosecond()
 	}
 }
 
 func BenchmarkUUID_V1(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		uuid.NewV1()
+		vault.x3 = uuid.NewV1()
 	}
 }
 
 func BenchmarkUUID_V2(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		uuid.NewV2(128)
+		vault.x3 = uuid.NewV2(128)
 	}
 }
 
 func BenchmarkUUID_V3(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		uuid.NewV3(uuid.NamespaceDNS, "example.com")
+		vault.x3 = uuid.NewV3(uuid.NamespaceDNS, "example.com")
 	}
 }
 
 func BenchmarkUUID_V4(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		uuid.NewV4()
+		vault.x3 = uuid.NewV4()
 	}
 }
 
 func BenchmarkUUID_V5(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		uuid.NewV5(uuid.NamespaceDNS, "example.com")
+		vault.x3 = uuid.NewV5(uuid.NamespaceDNS, "example.com")
 	}
 }
 
 func BenchmarkRedis(b *testing.B) {
+	b.ReportAllocs()
 	client := redis.NewClient(&redis.Options{
 		Addr: "127.0.0.1:6379",
 	})
@@ -93,8 +111,9 @@ func BenchmarkRedis(b *testing.B) {
 	b.ResetTimer()
 
 	key := "foo:id"
+	var err error
 	for i := 0; i < b.N; i++ {
-		_, err := client.Incr(key).Result()
+		vault.x1, err = client.Incr(key).Result()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -102,6 +121,7 @@ func BenchmarkRedis(b *testing.B) {
 }
 
 func BenchmarkSnowflake(b *testing.B) {
+	b.ReportAllocs()
 	node, err := snowflake.NewNode(1)
 	if err != nil {
 		b.Fatal(err)
@@ -109,6 +129,18 @@ func BenchmarkSnowflake(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		node.Generate()
+		vault.x4 = node.Generate()
+	}
+}
+
+func BenchmarkULID(b *testing.B) {
+	b.ReportAllocs()
+	var err error
+	for i := 0; i < b.N; i++ {
+		t := uint64(time.Now().UnixNano() / int64(time.Millisecond))
+		vault.x5, err = ulid.New(t, nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 }

@@ -9,6 +9,7 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/oklog/ulid v1.3.1
 	github.com/onsi/ginkgo v1.10.3 // indirect
 	github.com/onsi/gomega v1.7.1 // indirect
 	github.com/satori/go.uuid v1.2.0
