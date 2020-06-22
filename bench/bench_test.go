@@ -1,6 +1,7 @@
 package bench
 
 import (
+	crypto_rand "crypto/rand"
 	"math/rand"
 	"testing"
 	"time"
@@ -137,8 +138,8 @@ func BenchmarkULID(b *testing.B) {
 	b.ReportAllocs()
 	var err error
 	for i := 0; i < b.N; i++ {
-		t := uint64(time.Now().UnixNano() / int64(time.Millisecond))
-		vault.x5, err = ulid.New(t, nil)
+		now := uint64(time.Now().UnixNano() / int64(time.Millisecond))
+		vault.x5, err = ulid.New(now, crypto_rand.Reader)
 		if err != nil {
 			panic(err)
 		}
