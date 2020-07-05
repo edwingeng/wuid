@@ -1,4 +1,4 @@
-package bench
+package islet
 
 import (
 	_ "github.com/bwmarrin/snowflake" // ...

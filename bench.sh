@@ -32,4 +32,4 @@ function printUsage() {
     $colorful && tput setaf 7
 }
 
-go test github.com/edwingeng/wuid/bench -bench=. -benchmem -cpu=1
+go test github.com/edwingeng/wuid/islet -bench=. -benchmem -cpu=1
