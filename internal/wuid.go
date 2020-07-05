@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	// CriticalValue indicates when the low 36 bits are about to run out
+	// CriticalValue indicates when to renew the high 28 bits
 	CriticalValue int64 = (1 << 36) * 80 / 100
-	// RenewInterval indicates how often renew retries are performed
+	// RenewInterval indicates how often renew is performed if it fails
 	RenewInterval int64 = 0x1FFFFFFF
 	// PanicValue indicates when Next starts to panic
 	PanicValue int64 = (1 << 36) * 98 / 100

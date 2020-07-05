@@ -1,10 +1,3 @@
-/*
-Package wuid provides WUID, an extremely fast unique number generator. It is 10-135 times faster
-than UUID and 4600 times faster than generating unique numbers with Redis.
-
-WUID generates unique 64-bit integers in sequence. The high 28 bits are loaded from a data store.
-By now, Redis, MySQL, and MongoDB are supported.
-*/
 package wuid
 
 import (
@@ -55,11 +48,10 @@ func (this *WUID) LoadH28FromMysql(newDB NewDB, table string) error {
 	if err != nil {
 		return err
 	}
-	lastInsertedID, err := result.LastInsertId()
+	h28, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
-	h28 := int64(lastInsertedID)
 	if err = this.w.VerifyH28(h28); err != nil {
 		return err
 	}
