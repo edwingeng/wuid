@@ -16,6 +16,7 @@ BenchmarkUUID_V5     4277338           274 ns/op         176 B/op          4 all
 BenchmarkRedis         35462         35646 ns/op         176 B/op          5 allocs/op
 BenchmarkSnowflake   4931476           244 ns/op           0 B/op          0 allocs/op
 BenchmarkULID        8410358           141 ns/op          16 B/op          1 allocs/op
+BenchmarkXID        15000969            79.2 ns/op         0 B/op          0 allocs/op
 ```
 
 # Features
@@ -24,7 +25,7 @@ BenchmarkULID        8410358           141 ns/op          16 B/op          1 all
 - Being unique across time
 - Being unique within a data center
 - Being unique globally if all data centers share a same data store, or they use different section IDs
-- Being capable of generating 100M unique numbers in a single second
+- Being capable of generating 100M unique numbers in a single second with each WUID instance
 - Auto-renew when the low 36 bits are about to run out
 
 # Install

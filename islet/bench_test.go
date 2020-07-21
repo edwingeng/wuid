@@ -11,6 +11,7 @@ import (
 	"github.com/edwingeng/wuid/redis/wuid"
 	"github.com/go-redis/redis"
 	"github.com/oklog/ulid"
+	"github.com/rs/xid"
 	"github.com/satori/go.uuid"
 )
 
@@ -20,6 +21,7 @@ var vault struct {
 	x3 uuid.UUID
 	x4 snowflake.ID
 	x5 ulid.ULID
+	x6 xid.ID
 }
 
 func getRedisConfig() (string, string, string) {
@@ -143,5 +145,12 @@ func BenchmarkULID(b *testing.B) {
 		if err != nil {
 			panic(err)
 		}
+	}
+}
+
+func BenchmarkXID(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		vault.x6 = xid.New()
 	}
 }
