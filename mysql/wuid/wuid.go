@@ -88,3 +88,8 @@ func WithSection(section int8) Option {
 func WithH28Verifier(cb func(h28 int64) error) Option {
 	return internal.WithH28Verifier(cb)
 }
+
+// WithStep sets the step of Next()
+func WithStep(step int64) Option {
+	return internal.WithStep(step)
+}

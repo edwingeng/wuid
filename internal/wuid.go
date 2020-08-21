@@ -20,12 +20,14 @@ const (
 
 // WUID is for internal use only.
 type WUID struct {
+	N    int64
+	Step int64
+	Mask int64
+
 	slog.Logger
 	Tag         string
 	Section     int8
 	H28Verifier func(h28 int64) error
-
-	N int64
 
 	sync.Mutex
 	Renew func() error
@@ -33,7 +35,7 @@ type WUID struct {
 
 // NewWUID is for internal use only.
 func NewWUID(tag string, logger slog.Logger, opts ...Option) (w *WUID) {
-	w = &WUID{Tag: tag}
+	w = &WUID{Step: 1, Tag: tag}
 	if logger != nil {
 		w.Logger = logger
 	} else {
@@ -42,12 +44,13 @@ func NewWUID(tag string, logger slog.Logger, opts ...Option) (w *WUID) {
 	for _, opt := range opts {
 		opt(w)
 	}
+	w.Mask = ^(w.Step - 1)
 	return
 }
 
 // Next is for internal use only.
 func (this *WUID) Next() int64 {
-	x := atomic.AddInt64(&this.N, 1)
+	x := atomic.AddInt64(&this.N, this.Step) & this.Mask
 	v := x & 0x0FFFFFFFFF
 	if v >= PanicValue {
 		atomic.CompareAndSwapInt64(&this.N, x, x&(0x07FFFFFF<<36)|PanicValue)
@@ -144,5 +147,17 @@ func WithSection(section int8) Option {
 func WithH28Verifier(cb func(h28 int64) error) Option {
 	return func(w *WUID) {
 		w.H28Verifier = cb
+	}
+}
+
+// WithStep sets the step of Next()
+func WithStep(step int64) Option {
+	switch step {
+	case 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024:
+	default:
+		panic("the step must be one of these values: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024")
+	}
+	return func(wuid *WUID) {
+		wuid.Step = step
 	}
 }

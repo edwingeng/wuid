@@ -114,6 +114,50 @@ func TestWUID_Next_Renew(t *testing.T) {
 	}
 }
 
+func TestWUID_Step(t *testing.T) {
+	const step = 16
+	scav := slog.NewScavenger()
+	g := NewWUID("default", scav, WithStep(step))
+	g.Renew = func() error {
+		g.Reset(((atomic.LoadInt64(&g.N) >> 36) + 1) << 36)
+		return nil
+	}
+
+	for i := int64(1); i < 10; i++ {
+		if g.Next()&0x0FFFFFFFFF != step*i {
+			t.Fatal("g.Next()&0x0FFFFFFFFF != step*i")
+		}
+	}
+
+	n1 := g.Next()
+	kk := ((CriticalValue + RenewInterval) & ^RenewInterval) - 1
+
+	g.Reset((n1 >> 36 << 36) | kk)
+	g.Next()
+	time.Sleep(time.Millisecond * 200)
+	n2 := g.Next()
+
+	g.Reset((n2 >> 36 << 36) | kk)
+	g.Next()
+	time.Sleep(time.Millisecond * 200)
+	n3 := g.Next()
+
+	if n2>>36-n1>>36 != 1 || n3>>36-n2>>36 != 1 {
+		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>36, n2>>36, n3>>36)
+	}
+
+	var numInfo int
+	scav.Filter(func(level, msg string) bool {
+		if level == slog.LevelInfo {
+			numInfo++
+		}
+		return true
+	})
+	if numInfo != 2 {
+		t.Fatalf("there should be 2 renew logs of the info type. actual: %d", numInfo)
+	}
+}
+
 func TestWUID_Next_Renew_Fail(t *testing.T) {
 	scav := slog.NewScavenger()
 	g := NewWUID("default", scav)
