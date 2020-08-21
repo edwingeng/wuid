@@ -1,4 +1,4 @@
-package islet
+package bench
 
 import (
 	crypto_rand "crypto/rand"
