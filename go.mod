@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/edwingeng/slog v0.0.0-20191011125256-3ac46ac3623d
+	github.com/edwingeng/slog v0.0.0-20201022130951-3acf7ffd5ae9
 	github.com/go-redis/redis v6.15.6+incompatible
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/golang/protobuf v1.3.2 // indirect
