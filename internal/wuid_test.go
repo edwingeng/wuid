@@ -86,7 +86,7 @@ func TestWUID_Next_Renew(t *testing.T) {
 	}
 
 	n1 := g.Next()
-	kk := ((CriticalValue + RenewInterval) & ^RenewInterval) - 1
+	kk := ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
 
 	g.Reset((n1 >> 36 << 36) | kk)
 	g.Next()
@@ -130,14 +130,14 @@ func TestWUID_Step(t *testing.T) {
 	}
 
 	n1 := g.Next()
-	kk := ((CriticalValue + RenewInterval) & ^RenewInterval) - 1
+	kk := ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
 
-	g.Reset((n1 >> 36 << 36) | kk)
+	g.Reset(((n1 >> 36 << 36) | kk) & ^(step - 1))
 	g.Next()
 	time.Sleep(time.Millisecond * 200)
 	n2 := g.Next()
 
-	g.Reset((n2 >> 36 << 36) | kk)
+	g.Reset(((n2 >> 36 << 36) | kk) & ^(step - 1))
 	g.Next()
 	time.Sleep(time.Millisecond * 200)
 	n3 := g.Next()
@@ -165,7 +165,7 @@ func TestWUID_Next_Renew_Fail(t *testing.T) {
 		return errors.New("foo")
 	}
 
-	kk := ((CriticalValue + RenewInterval) & ^RenewInterval) - 1
+	kk := ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
 
 	g.Reset((1 >> 36 << 36) | kk)
 	g.Next()
@@ -197,7 +197,7 @@ func TestWUID_Next_Renew_Panic(t *testing.T) {
 	}
 
 	n1 := g.Next()
-	kk := ((CriticalValue + RenewInterval) & ^RenewInterval) - 1
+	kk := ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
 	g.Reset((n1 >> 36 << 36) | kk)
 	g.Next()
 
@@ -286,12 +286,15 @@ func TestWithSection_Reset(t *testing.T) {
 
 func TestWithRenewCallback(t *testing.T) {
 	g := NewWUID("default", nil, WithH28Verifier(func(h28 int64) error {
-		if h28 >= 10 {
+		if h28 >= 20 {
 			return errors.New("bomb")
 		}
 		return nil
 	}))
-	if err := g.VerifyH28(10); err == nil || err.Error() != "bomb" {
+	if err := g.VerifyH28(10); err != nil {
+		t.Fatal("the H28Verifier should not return error")
+	}
+	if err := g.VerifyH28(20); err == nil || err.Error() != "bomb" {
 		t.Fatal("the H28Verifier was not called")
 	}
 }

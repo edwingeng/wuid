@@ -10,19 +10,18 @@ import (
 )
 
 const (
-	// CriticalValue indicates when to renew the high 28 bits
-	CriticalValue int64 = (1 << 36) * 80 / 100
-	// RenewInterval indicates how often renew is performed if it fails
-	RenewInterval int64 = 0x1FFFFFFF
 	// PanicValue indicates when Next starts to panic
-	PanicValue int64 = (1 << 36) * 98 / 100
+	PanicValue int64 = ((1 << 36) * 98 / 100) & ^1023
+	// CriticalValue indicates when to renew the high 28 bits
+	CriticalValue int64 = ((1 << 36) * 80 / 100) & ^1023
+	// RenewIntervalMask indicates how often renew is performed if it fails
+	RenewIntervalMask int64 = 0x20000000 - 1
 )
 
 // WUID is for internal use only.
 type WUID struct {
 	N    int64
 	Step int64
-	Mask int64
 
 	slog.Logger
 	Tag         string
@@ -44,19 +43,18 @@ func NewWUID(tag string, logger slog.Logger, opts ...Option) (w *WUID) {
 	for _, opt := range opts {
 		opt(w)
 	}
-	w.Mask = ^(w.Step - 1)
 	return
 }
 
 // Next is for internal use only.
 func (this *WUID) Next() int64 {
-	x := atomic.AddInt64(&this.N, this.Step) & this.Mask
+	x := atomic.AddInt64(&this.N, this.Step)
 	v := x & 0x0FFFFFFFFF
 	if v >= PanicValue {
 		atomic.CompareAndSwapInt64(&this.N, x, x&(0x07FFFFFF<<36)|PanicValue)
 		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. tag: %s", this.Tag))
 	}
-	if v >= CriticalValue && v&RenewInterval == 0 {
+	if v >= CriticalValue && v&RenewIntervalMask == 0 {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
