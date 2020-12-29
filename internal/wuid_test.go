@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"math/rand"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -117,13 +118,14 @@ func TestWUID_Next_Renew(t *testing.T) {
 func TestWUID_Step(t *testing.T) {
 	const step = 16
 	scav := slog.NewScavenger()
-	g := NewWUID("default", scav, WithStep(step))
+	g := NewWUID("default", scav, WithStep(step, 0))
+	g.Reset(17 << 36)
 	g.Renew = func() error {
 		g.Reset(((atomic.LoadInt64(&g.N) >> 36) + 1) << 36)
 		return nil
 	}
 
-	for i := int64(1); i < 10; i++ {
+	for i := int64(1); i < 100; i++ {
 		if g.Next()&0x0FFFFFFFFF != step*i {
 			t.Fatal("g.Next()&0x0FFFFFFFFF != step*i")
 		}
@@ -155,6 +157,31 @@ func TestWUID_Step(t *testing.T) {
 	})
 	if numInfo != 2 {
 		t.Fatalf("there should be 2 renew logs of the info type. actual: %d", numInfo)
+	}
+}
+
+func TestWUID_Floor(t *testing.T) {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	allSteps := []int64{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
+	for loop := 0; loop < 10000; loop++ {
+		step := allSteps[r.Intn(len(allSteps))]
+		floor := r.Int63n(step)
+		scav := slog.NewScavenger()
+		g := NewWUID("default", scav, WithStep(step, floor))
+		baseValue := r.Int63n(100) << 36
+		g.Reset(baseValue)
+
+		for i := int64(1); i < 100; i++ {
+			x := g.Next()
+			if floor != 0 {
+				if reminder := x % floor; reminder != 0 {
+					t.Fatal("reminder != 0")
+				}
+			}
+			if x <= baseValue+i*step-step || x > baseValue+i*step {
+				t.Fatal("x <= baseValue+i*step-step || x > baseValue+i*step")
+			}
+		}
 	}
 }
 

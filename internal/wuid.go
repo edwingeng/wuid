@@ -20,8 +20,9 @@ const (
 
 // WUID is for internal use only.
 type WUID struct {
-	N    int64
-	Step int64
+	N     int64
+	Step  int64
+	Floor int64
 
 	slog.Logger
 	Tag         string
@@ -70,7 +71,11 @@ func (this *WUID) Next() int64 {
 			}
 		}()
 	}
-	return x
+	if this.Floor == 0 {
+		return x
+	} else {
+		return x / this.Floor * this.Floor
+	}
 }
 
 // RenewNow reacquires the high 28 bits from your data store immediately
@@ -148,14 +153,18 @@ func WithH28Verifier(cb func(h28 int64) error) Option {
 	}
 }
 
-// WithStep sets the step of Next()
-func WithStep(step int64) Option {
+// WithStep sets the step and floor of Next()
+func WithStep(step int64, floor int64) Option {
 	switch step {
 	case 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024:
 	default:
 		panic("the step must be one of these values: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024")
 	}
+	if floor != 0 && (floor < 0 || floor >= step) {
+		panic(fmt.Errorf("floor must be in between [0, %d)", step))
+	}
 	return func(wuid *WUID) {
 		wuid.Step = step
+		wuid.Floor = floor
 	}
 }
