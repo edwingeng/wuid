@@ -140,7 +140,6 @@ CREATE TABLE IF NOT EXISTS `wuid` (
 You can specify a custom section ID for the generated numbers with `wuid.WithSection` when you call `wuid.NewWUID`. The section ID must be in between `[1, 7]`.
 
 # Best practices
-- Use different keys/tables/docs for different purposes.
 - Pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed", which means that the low 36 bits are about to run out in hours to hundreds of hours, and WUID fails to get a new number from your data store.
 
 # Special thanks
