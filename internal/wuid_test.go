@@ -281,8 +281,8 @@ func TestWithSection_Panic(t *testing.T) {
 				_ = recover()
 			}()
 			WithSection(j)
-			if j == 0 || j >= 8 {
-				t.Fatalf("WithSection should only accept values range from 1 to 7. j: %d", j)
+			if j >= 8 {
+				t.Fatalf("WithSection should only accept values range from 0 to 7. j: %d", j)
 			}
 		}(int8(i))
 	}

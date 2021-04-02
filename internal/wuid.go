@@ -26,6 +26,7 @@ type WUID struct {
 
 	slog.Logger
 	Tag         string
+	NoSec       bool
 	Section     int8
 	H28Verifier func(h28 int64) error
 
@@ -35,7 +36,7 @@ type WUID struct {
 
 // NewWUID is for internal use only.
 func NewWUID(tag string, logger slog.Logger, opts ...Option) (w *WUID) {
-	w = &WUID{Step: 1, Tag: tag}
+	w = &WUID{Step: 1, Tag: tag, NoSec: true}
 	if logger != nil {
 		w.Logger = logger
 	} else {
@@ -91,7 +92,7 @@ func (this *WUID) Reset(n int64) {
 	if n < 0 {
 		panic(fmt.Errorf("n should never be negative. tag: %s", this.Tag))
 	}
-	if this.Section == 0 {
+	if this.NoSec {
 		atomic.StoreInt64(&this.N, n)
 	} else {
 		atomic.StoreInt64(&this.N, n&0x0FFFFFFFFFFFFFFF|int64(this.Section)<<60)
@@ -104,7 +105,7 @@ func (this *WUID) VerifyH28(h28 int64) error {
 		return errors.New("h28 must be positive. tag: " + this.Tag)
 	}
 
-	if this.Section == 0 {
+	if this.NoSec {
 		if h28 > 0x07FFFFFF {
 			return errors.New("h28 should not exceed 0x07FFFFFF. tag: " + this.Tag)
 		}
@@ -114,7 +115,7 @@ func (this *WUID) VerifyH28(h28 int64) error {
 		}
 	}
 
-	if this.Section == 0 {
+	if this.NoSec {
 		if h28 == atomic.LoadInt64(&this.N)>>36 {
 			return fmt.Errorf("h28 should be a different value other than %d. tag: %s", h28, this.Tag)
 		}
@@ -138,10 +139,11 @@ type Option func(*WUID)
 
 // WithSection is for internal use only.
 func WithSection(section int8) Option {
-	if section < 1 || section > 7 {
-		panic("section must be in between [1, 7]")
+	if section < 0 || section > 7 {
+		panic("section must be in between [0, 7]")
 	}
 	return func(w *WUID) {
+		w.NoSec = false
 		w.Section = section
 	}
 }
