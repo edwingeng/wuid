@@ -13,8 +13,8 @@ type WUID struct {
 }
 
 // NewWUID creates a new WUID instance.
-func NewWUID(tag string, logger slog.Logger, opts ...Option) *WUID {
-	return &WUID{w: internal.NewWUID(tag, logger, opts...)}
+func NewWUID(name string, logger slog.Logger, opts ...Option) *WUID {
+	return &WUID{w: internal.NewWUID(name, logger, opts...)}
 }
 
 // Next returns the next unique number.
@@ -28,7 +28,7 @@ type H28Callback func() (h28 int64, done func(), err error)
 // the unique numbers that Next generates.
 func (this *WUID) LoadH28WithCallback(cb H28Callback) error {
 	if cb == nil {
-		return errors.New("cb cannot be nil. tag: " + this.w.Tag)
+		return errors.New("cb cannot be nil. name: " + this.w.Name)
 	}
 
 	h28, done, err := cb()
@@ -43,7 +43,7 @@ func (this *WUID) LoadH28WithCallback(cb H28Callback) error {
 	}
 
 	this.w.Reset(h28 << 36)
-	this.w.Infof("<wuid> new h28: %d. tag: %s", h28, this.w.Tag)
+	this.w.Infof("<wuid> new h28: %d. name: %s", h28, this.w.Name)
 
 	this.w.Lock()
 	defer this.w.Unlock()

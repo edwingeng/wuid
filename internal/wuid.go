@@ -25,7 +25,7 @@ type WUID struct {
 	Floor int64
 
 	slog.Logger
-	Tag         string
+	Name        string
 	NoSec       bool
 	Section     int8
 	H28Verifier func(h28 int64) error
@@ -35,8 +35,8 @@ type WUID struct {
 }
 
 // NewWUID is for internal use only.
-func NewWUID(tag string, logger slog.Logger, opts ...Option) (w *WUID) {
-	w = &WUID{Step: 1, Tag: tag, NoSec: true}
+func NewWUID(name string, logger slog.Logger, opts ...Option) (w *WUID) {
+	w = &WUID{Step: 1, Name: name, NoSec: true}
 	if logger != nil {
 		w.Logger = logger
 	} else {
@@ -54,21 +54,21 @@ func (this *WUID) Next() int64 {
 	v := x & 0x0FFFFFFFFF
 	if v >= PanicValue {
 		atomic.CompareAndSwapInt64(&this.N, x, x&(0x07FFFFFF<<36)|PanicValue)
-		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. tag: %s", this.Tag))
+		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. name: %s", this.Name))
 	}
 	if v >= CriticalValue && v&RenewIntervalMask == 0 {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					this.Warnf("<wuid> panic, renew failed. tag: %s, reason: %+v", this.Tag, r)
+					this.Warnf("<wuid> panic, renew failed. name: %s, reason: %+v", this.Name, r)
 				}
 			}()
 
 			err := this.RenewNow()
 			if err != nil {
-				this.Warnf("<wuid> renew failed. tag: %s, reason: %+v", this.Tag, err)
+				this.Warnf("<wuid> renew failed. name: %s, reason: %+v", this.Name, err)
 			} else {
-				this.Infof("<wuid> renew succeeded. tag: %s", this.Tag)
+				this.Infof("<wuid> renew succeeded. name: %s", this.Name)
 			}
 		}()
 	}
@@ -90,7 +90,7 @@ func (this *WUID) RenewNow() error {
 // Reset is for internal use only.
 func (this *WUID) Reset(n int64) {
 	if n < 0 {
-		panic(fmt.Errorf("n should never be negative. tag: %s", this.Tag))
+		panic(fmt.Errorf("n should never be negative. name: %s", this.Name))
 	}
 	if this.NoSec {
 		atomic.StoreInt64(&this.N, n)
@@ -102,26 +102,26 @@ func (this *WUID) Reset(n int64) {
 // VerifyH28 is for internal use only.
 func (this *WUID) VerifyH28(h28 int64) error {
 	if h28 <= 0 {
-		return errors.New("h28 must be positive. tag: " + this.Tag)
+		return errors.New("h28 must be positive. name: " + this.Name)
 	}
 
 	if this.NoSec {
 		if h28 > 0x07FFFFFF {
-			return errors.New("h28 should not exceed 0x07FFFFFF. tag: " + this.Tag)
+			return errors.New("h28 should not exceed 0x07FFFFFF. name: " + this.Name)
 		}
 	} else {
 		if h28 > 0x00FFFFFF {
-			return errors.New("h28 should not exceed 0x00FFFFFF. tag: " + this.Tag)
+			return errors.New("h28 should not exceed 0x00FFFFFF. name: " + this.Name)
 		}
 	}
 
 	if this.NoSec {
 		if h28 == atomic.LoadInt64(&this.N)>>36 {
-			return fmt.Errorf("h28 should be a different value other than %d. tag: %s", h28, this.Tag)
+			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, this.Name)
 		}
 	} else {
 		if h28 == atomic.LoadInt64(&this.N)>>36&0x00FFFFFF {
-			return fmt.Errorf("h28 should be a different value other than %d. tag: %s", h28, this.Tag)
+			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, this.Name)
 		}
 	}
 

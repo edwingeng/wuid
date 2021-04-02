@@ -16,8 +16,8 @@ type WUID struct {
 }
 
 // NewWUID creates a new WUID instance.
-func NewWUID(tag string, logger slog.Logger, opts ...Option) *WUID {
-	return &WUID{w: internal.NewWUID(tag, logger, opts...)}
+func NewWUID(name string, logger slog.Logger, opts ...Option) *WUID {
+	return &WUID{w: internal.NewWUID(name, logger, opts...)}
 }
 
 // Next returns the next unique number.
@@ -31,7 +31,7 @@ type NewDB func() (client *sql.DB, autoDisconnect bool, err error)
 // sets that as the high 28 bits of the unique numbers that Next generates.
 func (this *WUID) LoadH28FromMysql(newDB NewDB, table string) error {
 	if len(table) == 0 {
-		return errors.New("table cannot be empty. tag: " + this.w.Tag)
+		return errors.New("table cannot be empty. name: " + this.w.Name)
 	}
 
 	db, autoDisconnect, err := newDB()
@@ -57,7 +57,7 @@ func (this *WUID) LoadH28FromMysql(newDB NewDB, table string) error {
 	}
 
 	this.w.Reset(h28 << 36)
-	this.w.Logger.Infof("<wuid> new h28: %d. tag: %s", h28, this.w.Tag)
+	this.w.Logger.Infof("<wuid> new h28: %d. name: %s", h28, this.w.Name)
 
 	this.w.Lock()
 	defer this.w.Unlock()
