@@ -11,6 +11,7 @@ require (
 	github.com/oklog/ulid v1.3.1
 	github.com/rs/xid v1.2.1
 	github.com/satori/go.uuid v1.2.0
+	github.com/teris-io/shortid v0.0.0-20201117134242-e59966efd125
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.3.3
 	google.golang.org/appengine v1.6.5 // indirect

@@ -13,6 +13,7 @@ import (
 	"github.com/oklog/ulid"
 	"github.com/rs/xid"
 	"github.com/satori/go.uuid"
+	"github.com/teris-io/shortid"
 )
 
 var vault struct {
@@ -22,6 +23,7 @@ var vault struct {
 	x4 snowflake.ID
 	x5 ulid.ULID
 	x6 xid.ID
+	x7 string
 }
 
 func getRedisConfig() (string, string, string) {
@@ -152,5 +154,12 @@ func BenchmarkXID(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		vault.x6 = xid.New()
+	}
+}
+
+func BenchmarkShortID(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		vault.x7 = shortid.MustGenerate()
 	}
 }

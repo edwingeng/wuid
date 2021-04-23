@@ -17,6 +17,7 @@ BenchmarkRedis         35462         35646 ns/op         176 B/op          5 all
 BenchmarkSnowflake   4931476           244 ns/op           0 B/op          0 allocs/op
 BenchmarkULID        8410358           141 ns/op          16 B/op          1 allocs/op
 BenchmarkXID        15000969            79.2 ns/op         0 B/op          0 allocs/op
+BenchmarkShortID     1738039           698.9 ns/op       311 B/op         11 allocs/op
 ```
 
 # Features
