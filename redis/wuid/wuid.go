@@ -2,7 +2,6 @@ package wuid
 
 import (
 	"errors"
-	"io"
 
 	"github.com/edwingeng/slog"
 	"github.com/edwingeng/wuid/internal"
@@ -24,7 +23,7 @@ func (this *WUID) Next() int64 {
 	return this.w.Next()
 }
 
-type NewClient func() (client redis.Cmdable, autoDisconnect bool, err error)
+type NewClient func() (client redis.UniversalClient, autoDisconnect bool, err error)
 
 // LoadH28FromRedis adds 1 to a specific number in your Redis, fetches its new value, and then
 // sets that as the high 28 bits of the unique numbers that Next generates.
@@ -39,8 +38,7 @@ func (this *WUID) LoadH28FromRedis(newClient NewClient, key string) error {
 	}
 	if autoDisconnect {
 		defer func() {
-			closer := client.(io.Closer)
-			_ = closer.Close()
+			_ = client.Close()
 		}()
 	}
 

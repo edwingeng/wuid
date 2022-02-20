@@ -22,7 +22,7 @@ func (this *WUID) Next() int64 {
 	return this.w.Next()
 }
 
-type H28Callback func() (h28 int64, done func(), err error)
+type H28Callback func() (h28 int64, clean func(), err error)
 
 // LoadH28WithCallback invokes cb to get a number, and then sets it as the high 28 bits of
 // the unique numbers that Next generates.
@@ -31,11 +31,11 @@ func (this *WUID) LoadH28WithCallback(cb H28Callback) error {
 		return errors.New("cb cannot be nil. name: " + this.w.Name)
 	}
 
-	h28, done, err := cb()
+	h28, clean, err := cb()
 	if err != nil {
 		return err
-	} else if done != nil {
-		defer done()
+	} else if clean != nil {
+		defer clean()
 	}
 
 	if err = this.w.VerifyH28(h28); err != nil {
