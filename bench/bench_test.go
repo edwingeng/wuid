@@ -33,7 +33,7 @@ func getRedisConfig() (string, string, string) {
 func BenchmarkWUID(b *testing.B) {
 	b.ReportAllocs()
 	addr, pass, key := getRedisConfig()
-	newClient := func() (client redis.Cmdable, autoDisconnect bool, err error) {
+	newClient := func() (client redis.UniversalClient, autoDisconnect bool, err error) {
 		return redis.NewClient(&redis.Options{
 			Addr:     addr,
 			Password: pass,
