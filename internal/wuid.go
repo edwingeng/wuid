@@ -49,84 +49,84 @@ func NewWUID(name string, logger slog.Logger, opts ...Option) (w *WUID) {
 }
 
 // Next is for internal use only.
-func (this *WUID) Next() int64 {
-	x := atomic.AddInt64(&this.N, this.Step)
+func (w *WUID) Next() int64 {
+	x := atomic.AddInt64(&w.N, w.Step)
 	v := x & 0x0FFFFFFFFF
 	if v >= PanicValue {
-		atomic.CompareAndSwapInt64(&this.N, x, x&(0x07FFFFFF<<36)|PanicValue)
-		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. name: %s", this.Name))
+		atomic.CompareAndSwapInt64(&w.N, x, x&(0x07FFFFFF<<36)|PanicValue)
+		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. name: %s", w.Name))
 	}
 	if v >= CriticalValue && v&RenewIntervalMask == 0 {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					this.Warnf("<wuid> panic, renew failed. name: %s, reason: %+v", this.Name, r)
+					w.Warnf("<wuid> panic, renew failed. name: %s, reason: %+v", w.Name, r)
 				}
 			}()
 
-			err := this.RenewNow()
+			err := w.RenewNow()
 			if err != nil {
-				this.Warnf("<wuid> renew failed. name: %s, reason: %+v", this.Name, err)
+				w.Warnf("<wuid> renew failed. name: %s, reason: %+v", w.Name, err)
 			} else {
-				this.Infof("<wuid> renew succeeded. name: %s", this.Name)
+				w.Infof("<wuid> renew succeeded. name: %s", w.Name)
 			}
 		}()
 	}
-	if this.Floor == 0 {
+	if w.Floor == 0 {
 		return x
 	} else {
-		return x / this.Floor * this.Floor
+		return x / w.Floor * w.Floor
 	}
 }
 
 // RenewNow reacquires the high 28 bits from your data store immediately
-func (this *WUID) RenewNow() error {
-	this.Lock()
-	f := this.Renew
-	this.Unlock()
+func (w *WUID) RenewNow() error {
+	w.Lock()
+	f := w.Renew
+	w.Unlock()
 	return f()
 }
 
 // Reset is for internal use only.
-func (this *WUID) Reset(n int64) {
+func (w *WUID) Reset(n int64) {
 	if n < 0 {
-		panic(fmt.Errorf("n should never be negative. name: %s", this.Name))
+		panic(fmt.Errorf("n should never be negative. name: %s", w.Name))
 	}
-	if this.Monolithic {
-		atomic.StoreInt64(&this.N, n)
+	if w.Monolithic {
+		atomic.StoreInt64(&w.N, n)
 	} else {
-		atomic.StoreInt64(&this.N, n&0x0FFFFFFFFFFFFFFF|int64(this.Section)<<60)
+		atomic.StoreInt64(&w.N, n&0x0FFFFFFFFFFFFFFF|int64(w.Section)<<60)
 	}
 }
 
 // VerifyH28 is for internal use only.
-func (this *WUID) VerifyH28(h28 int64) error {
+func (w *WUID) VerifyH28(h28 int64) error {
 	if h28 <= 0 {
-		return errors.New("h28 must be positive. name: " + this.Name)
+		return errors.New("h28 must be positive. name: " + w.Name)
 	}
 
-	if this.Monolithic {
+	if w.Monolithic {
 		if h28 > 0x07FFFFFF {
-			return errors.New("h28 should not exceed 0x07FFFFFF. name: " + this.Name)
+			return errors.New("h28 should not exceed 0x07FFFFFF. name: " + w.Name)
 		}
 	} else {
 		if h28 > 0x00FFFFFF {
-			return errors.New("h28 should not exceed 0x00FFFFFF. name: " + this.Name)
+			return errors.New("h28 should not exceed 0x00FFFFFF. name: " + w.Name)
 		}
 	}
 
-	if this.Monolithic {
-		if h28 == atomic.LoadInt64(&this.N)>>36 {
-			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, this.Name)
+	if w.Monolithic {
+		if h28 == atomic.LoadInt64(&w.N)>>36 {
+			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, w.Name)
 		}
 	} else {
-		if h28 == atomic.LoadInt64(&this.N)>>36&0x00FFFFFF {
-			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, this.Name)
+		if h28 == atomic.LoadInt64(&w.N)>>36&0x00FFFFFF {
+			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, w.Name)
 		}
 	}
 
-	if this.H28Verifier != nil {
-		if err := this.H28Verifier(h28); err != nil {
+	if w.H28Verifier != nil {
+		if err := w.H28Verifier(h28); err != nil {
 			return err
 		}
 	}

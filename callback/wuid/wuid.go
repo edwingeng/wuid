@@ -18,17 +18,17 @@ func NewWUID(name string, logger slog.Logger, opts ...Option) *WUID {
 }
 
 // Next returns the next unique number.
-func (this *WUID) Next() int64 {
-	return this.w.Next()
+func (w *WUID) Next() int64 {
+	return w.w.Next()
 }
 
 type H28Callback func() (h28 int64, clean func(), err error)
 
 // LoadH28WithCallback invokes cb to get a number, and then sets it as the high 28 bits of
 // the unique numbers that Next generates.
-func (this *WUID) LoadH28WithCallback(cb H28Callback) error {
+func (w *WUID) LoadH28WithCallback(cb H28Callback) error {
 	if cb == nil {
-		return errors.New("cb cannot be nil. name: " + this.w.Name)
+		return errors.New("cb cannot be nil. name: " + w.w.Name)
 	}
 
 	h28, clean, err := cb()
@@ -38,29 +38,29 @@ func (this *WUID) LoadH28WithCallback(cb H28Callback) error {
 		defer clean()
 	}
 
-	if err = this.w.VerifyH28(h28); err != nil {
+	if err = w.w.VerifyH28(h28); err != nil {
 		return err
 	}
 
-	this.w.Reset(h28 << 36)
-	this.w.Infof("<wuid> new h28: %d. name: %s", h28, this.w.Name)
+	w.w.Reset(h28 << 36)
+	w.w.Infof("<wuid> new h28: %d. name: %s", h28, w.w.Name)
 
-	this.w.Lock()
-	defer this.w.Unlock()
+	w.w.Lock()
+	defer w.w.Unlock()
 
-	if this.w.Renew != nil {
+	if w.w.Renew != nil {
 		return nil
 	}
-	this.w.Renew = func() error {
-		return this.LoadH28WithCallback(cb)
+	w.w.Renew = func() error {
+		return w.LoadH28WithCallback(cb)
 	}
 
 	return nil
 }
 
 // RenewNow reacquires the high 28 bits from your data store immediately
-func (this *WUID) RenewNow() error {
-	return this.w.RenewNow()
+func (w *WUID) RenewNow() error {
+	return w.w.RenewNow()
 }
 
 type Option = internal.Option
