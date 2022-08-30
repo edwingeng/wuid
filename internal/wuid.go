@@ -11,30 +11,35 @@ import (
 
 const (
 	// PanicValue indicates when Next starts to panic
-	PanicValue int64 = ((1 << 36) * 98 / 100) & ^1023
+	PanicValue int64 = ((1 << 36) * 96 / 100) & ^1023
 	// CriticalValue indicates when to renew the high 28 bits
 	CriticalValue int64 = ((1 << 36) * 80 / 100) & ^1023
 	// RenewIntervalMask indicates how often renew is performed if it fails
 	RenewIntervalMask int64 = 0x20000000 - 1
 )
 
-// WUID is for internal use only.
+const (
+	H28Mask     = 0x07FFFFFF << 36
+	L36Mask     = 0x0FFFFFFFFF
+	SectionMask = 0x0FFFFFFFFFFFFFFF
+)
+
 type WUID struct {
 	N     int64
 	Step  int64
 	Floor int64
 
+	Monolithic bool
+	Section    int64
+
 	slog.Logger
 	Name        string
-	Monolithic  bool
-	Section     int8
 	H28Verifier func(h28 int64) error
 
 	sync.Mutex
 	Renew func() error
 }
 
-// NewWUID is for internal use only.
 func NewWUID(name string, logger slog.Logger, opts ...Option) (w *WUID) {
 	w = &WUID{Step: 1, Name: name, Monolithic: true}
 	if logger != nil {
@@ -48,29 +53,16 @@ func NewWUID(name string, logger slog.Logger, opts ...Option) (w *WUID) {
 	return
 }
 
-// Next is for internal use only.
 func (w *WUID) Next() int64 {
 	x := atomic.AddInt64(&w.N, w.Step)
-	v := x & 0x0FFFFFFFFF
+	v := x & L36Mask
 	if v >= PanicValue {
-		atomic.CompareAndSwapInt64(&w.N, x, x&(0x07FFFFFF<<36)|PanicValue)
+		panicValue := x&H28Mask | PanicValue
+		atomic.CompareAndSwapInt64(&w.N, x, panicValue)
 		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. name: %s", w.Name))
 	}
 	if v >= CriticalValue && v&RenewIntervalMask == 0 {
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					w.Warnf("<wuid> panic, renew failed. name: %s, reason: %+v", w.Name, r)
-				}
-			}()
-
-			err := w.RenewNow()
-			if err != nil {
-				w.Warnf("<wuid> renew failed. name: %s, reason: %+v", w.Name, err)
-			} else {
-				w.Infof("<wuid> renew succeeded. name: %s", w.Name)
-			}
-		}()
+		go workerRenew(w)
 	}
 	if w.Floor == 0 {
 		return x
@@ -79,7 +71,21 @@ func (w *WUID) Next() int64 {
 	}
 }
 
-// RenewNow reacquires the high 28 bits from your data store immediately
+func workerRenew(w *WUID) {
+	defer func() {
+		if r := recover(); r != nil {
+			w.Warnf("<wuid> panic, renew failed. name: %s, reason: %+v", w.Name, r)
+		}
+	}()
+
+	err := w.RenewNow()
+	if err != nil {
+		w.Warnf("<wuid> renew failed. name: %s, reason: %+v", w.Name, err)
+	} else {
+		w.Infof("<wuid> renew succeeded. name: %s", w.Name)
+	}
+}
+
 func (w *WUID) RenewNow() error {
 	w.Lock()
 	f := w.Renew
@@ -87,19 +93,18 @@ func (w *WUID) RenewNow() error {
 	return f()
 }
 
-// Reset is for internal use only.
 func (w *WUID) Reset(n int64) {
 	if n < 0 {
-		panic(fmt.Errorf("n should never be negative. name: %s", w.Name))
+		panic("n cannot be negative")
 	}
 	if w.Monolithic {
 		atomic.StoreInt64(&w.N, n)
 	} else {
-		atomic.StoreInt64(&w.N, n&0x0FFFFFFFFFFFFFFF|int64(w.Section)<<60)
+		v := n&SectionMask | w.Section
+		atomic.StoreInt64(&w.N, v)
 	}
 }
 
-// VerifyH28 is for internal use only.
 func (w *WUID) VerifyH28(h28 int64) error {
 	if h28 <= 0 {
 		return errors.New("h28 must be positive. name: " + w.Name)
@@ -115,12 +120,13 @@ func (w *WUID) VerifyH28(h28 int64) error {
 		}
 	}
 
+	current := atomic.LoadInt64(&w.N) >> 36
 	if w.Monolithic {
-		if h28 == atomic.LoadInt64(&w.N)>>36 {
+		if h28 == current {
 			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, w.Name)
 		}
 	} else {
-		if h28 == atomic.LoadInt64(&w.N)>>36&0x00FFFFFF {
+		if h28 == current&0x00FFFFFF {
 			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, w.Name)
 		}
 	}
@@ -134,28 +140,24 @@ func (w *WUID) VerifyH28(h28 int64) error {
 	return nil
 }
 
-// Option is for internal use only.
 type Option func(*WUID)
 
-// WithSection is for internal use only.
 func WithSection(section int8) Option {
 	if section < 0 || section > 7 {
 		panic("section must be in between [0, 7]")
 	}
 	return func(w *WUID) {
 		w.Monolithic = false
-		w.Section = section
+		w.Section = int64(section) << 60
 	}
 }
 
-// WithH28Verifier is for internal use only.
 func WithH28Verifier(cb func(h28 int64) error) Option {
 	return func(w *WUID) {
 		w.H28Verifier = cb
 	}
 }
 
-// WithStep sets the step and floor of Next()
 func WithStep(step int64, floor int64) Option {
 	switch step {
 	case 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024:
