@@ -1,7 +1,10 @@
 # Overview
-- WUID is a globally unique number generator.
-- WUID is **10-135** times faster than UUID and thousands of times faster than generating unique numbers with Redis.
+- WUID is a globally unique number generator. It is tens of times faster than UUID. Each instance can even generate 100M unique numbers in a single second.
 - In the nutshell, WUID generates unique 64-bit integers in sequence. The high 28 bits are loaded from a data store. By now, Redis, MySQL, MongoDB and Callback are supported.
+- WUID renews the high 28 bits automatically when the low 36 bits are about to run out.
+- WUID guarantees the uniqueness as long as all its instances share a same data store.
+- Number obfuscation is supported.
+- WUID is lock free.
 
 # Benchmarks
 ```
@@ -21,21 +24,12 @@ BenchmarkShortID         1312386         922.2 ns/op        320 B/op      11 all
 BenchmarkKsuid          19717675          59.79 ns/op         0 B/op       0 allocs/op
 ```
 
-# Features
-- Extremely fast
-- Lock free
-- Being unique across time
-- Being unique within a data center
-- Being unique globally if all data centers share a same data store, or they use different section IDs
-- Being capable of generating 100M unique numbers in a single second with each WUID instance
-- Auto-renew when the low 36 bits are about to run out
-
-# Install
+# Getting Started
 ``` bash
 go get -u github.com/edwingeng/wuid
 ```
 
-# Usage examples
+# Usages
 ### Redis
 ``` go
 import "github.com/edwingeng/wuid/redis/wuid"
@@ -128,7 +122,7 @@ for i := 0; i < 10; i++ {
 }
 ```
 
-# Mysql table creation
+# Mysql Table Creation
 ``` sql
 CREATE TABLE IF NOT EXISTS `wuid` (
     `h` int(10) NOT NULL AUTO_INCREMENT,
@@ -138,14 +132,14 @@ CREATE TABLE IF NOT EXISTS `wuid` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 ```
 
-# Section ID
-You can specify a custom section ID for the generated numbers with `wuid.WithSection` when you call `wuid.NewWUID`. The section ID must be in between `[0, 7]`.
+# Options
 
-# Step
-You can customize the step value of `Next()` with `wuid.WithStep`.
+- `WithObfuscation` enables number obfuscation.
+- `WithStep` sets the step and the floor for each number.
+- `WithSection` brands a section ID on each number. A section ID must be in between [0, 7].
 
-# Best practices
-- Pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed", which means that the low 36 bits are about to run out in hours to hundreds of hours, and WUID fails to get a new number from your data store.
+# Attentions
+It is highly recommended to pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed", which indicates that the low 36 bits are about to run out in hours to hundreds of hours, and WUID failed to get a new number from your data store. But don't worry too much, WUID will make an attempt once in a while. 
 
 # Special thanks
 - [dustinfog](https://github.com/dustinfog)

@@ -29,8 +29,11 @@ type WUID struct {
 	Step  int64
 	Floor int64
 
-	Monolithic bool
-	Section    int64
+	Flags           int8
+	Obfuscation     bool
+	Monolithic      bool
+	ObfuscationMask int64
+	Section         int64
 
 	slog.Logger
 	Name        string
@@ -50,28 +53,45 @@ func NewWUID(name string, logger slog.Logger, opts ...Option) (w *WUID) {
 	for _, opt := range opts {
 		opt(w)
 	}
+	if w.Floor != 0 {
+		w.ObfuscationMask |= w.Step - 1
+	}
 	return
 }
 
 func (w *WUID) Next() int64 {
-	x := atomic.AddInt64(&w.N, w.Step)
-	v := x & L36Mask
-	if v >= PanicValue {
-		panicValue := x&H28Mask | PanicValue
-		atomic.CompareAndSwapInt64(&w.N, x, panicValue)
+	v1 := atomic.AddInt64(&w.N, w.Step)
+	v2 := v1 & L36Mask
+	if v2 >= PanicValue {
+		panicValue := v1&H28Mask | PanicValue
+		atomic.CompareAndSwapInt64(&w.N, v1, panicValue)
 		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. name: %s", w.Name))
 	}
-	if v >= CriticalValue && v&RenewIntervalMask == 0 {
-		go workerRenew(w)
+	if v2 >= CriticalValue && v2&RenewIntervalMask == 0 {
+		go renewImpl(w)
 	}
-	if w.Floor == 0 {
-		return x
-	} else {
-		return x / w.Floor * w.Floor
+
+	switch w.Flags {
+	case 0:
+		return v1
+	case 1:
+		x := v1 ^ w.ObfuscationMask
+		r := v1&H28Mask | x&L36Mask
+		return r
+	case 2:
+		r := v1 / w.Floor * w.Floor
+		return r
+	case 3:
+		x := v1 ^ w.ObfuscationMask
+		q := v1&H28Mask | x&L36Mask
+		r := q / w.Floor * w.Floor
+		return r
+	default:
+		panic("impossible")
 	}
 }
 
-func workerRenew(w *WUID) {
+func renewImpl(w *WUID) {
 	defer func() {
 		if r := recover(); r != nil {
 			w.Warnf("<wuid> panic, renew failed. name: %s, reason: %+v", w.Name, r)
@@ -140,7 +160,7 @@ func (w *WUID) VerifyH28(h28 int64) error {
 	return nil
 }
 
-type Option func(*WUID)
+type Option func(w *WUID)
 
 func WithSection(section int8) Option {
 	if section < 0 || section > 7 {
@@ -167,8 +187,29 @@ func WithStep(step int64, floor int64) Option {
 	if floor != 0 && (floor < 0 || floor >= step) {
 		panic(fmt.Errorf("floor must be in between [0, %d)", step))
 	}
-	return func(wuid *WUID) {
-		wuid.Step = step
-		wuid.Floor = floor
+	return func(w *WUID) {
+		w.Step = step
+		if floor >= 2 {
+			w.Floor = floor
+			w.Flags |= 2
+		}
 	}
+}
+
+func WithObfuscation(seed int) Option {
+	if seed == 0 {
+		panic("seed cannot be zero")
+	}
+	return func(w *WUID) {
+		w.Obfuscation = true
+		w.ObfuscationMask = hash(uint64(seed))
+		w.Flags |= 1
+	}
+}
+
+func hash(x uint64) int64 {
+	x = (x ^ (x >> 30)) * uint64(0xbf58476d1ce4e5b9)
+	x = (x ^ (x >> 27)) * uint64(0x94d049bb133111eb)
+	x = (x ^ (x >> 31)) & 0x7FFFFFFFFFFFFFFF
+	return int64(x)
 }
