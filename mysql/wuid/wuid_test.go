@@ -33,13 +33,12 @@ func init() {
 
 	_, err = db.Exec(fmt.Sprintf("SELECT 1 FROM %s.%s LIMIT 1", dbName, table))
 	if err != nil {
-		format := "Table '%s.%s' doesn't exist. You can create it with github.com/edwingeng/wuid/mysql/db.sql"
-		panic(fmt.Sprintf(format, dbName, table))
+		panic(err)
 	}
 }
 
 func getMysqlConfig() (string, string, string, string, string) {
-	return "127.0.0.1:3306", "root", "password", "test", "wuid"
+	return "127.0.0.1:3306", "root", "hello", "test", "wuid"
 }
 
 func connect(addr, user, pass, dbName string) (*sql.DB, error) {
