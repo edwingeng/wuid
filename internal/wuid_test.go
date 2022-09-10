@@ -332,33 +332,33 @@ func TestWUID_Renew_Panic(t *testing.T) {
 }
 
 func TestWUID_VerifyH28(t *testing.T) {
-	g1 := NewWUID("alpha", nil)
-	g1.Reset(H28Mask)
-	if err := g1.VerifyH28(100); err != nil {
+	w1 := NewWUID("alpha", nil)
+	w1.Reset(H28Mask)
+	if err := w1.VerifyH28(100); err != nil {
 		t.Fatalf("VerifyH28 does not work as expected. n: 100, error: %s", err)
 	}
-	if err := g1.VerifyH28(0); err == nil {
+	if err := w1.VerifyH28(0); err == nil {
 		t.Fatalf("VerifyH28 does not work as expected. n: 0")
 	}
-	if err := g1.VerifyH28(0x08000000); err == nil {
+	if err := w1.VerifyH28(0x08000000); err == nil {
 		t.Fatalf("VerifyH28 does not work as expected. n: 0x08000000")
 	}
-	if err := g1.VerifyH28(0x07FFFFFF); err == nil {
+	if err := w1.VerifyH28(0x07FFFFFF); err == nil {
 		t.Fatalf("VerifyH28 does not work as expected. n: 0x07FFFFFF")
 	}
 
-	g2 := NewWUID("alpha", nil, WithSection(1))
-	g2.Reset(H28Mask)
-	if err := g2.VerifyH28(100); err != nil {
+	w2 := NewWUID("alpha", nil, WithSection(1))
+	w2.Reset(H28Mask)
+	if err := w2.VerifyH28(100); err != nil {
 		t.Fatalf("VerifyH28 does not work as expected. section: 1, n: 100, error: %s", err)
 	}
-	if err := g2.VerifyH28(0); err == nil {
+	if err := w2.VerifyH28(0); err == nil {
 		t.Fatalf("VerifyH28 does not work as expected. section: 1, n: 0")
 	}
-	if err := g2.VerifyH28(0x01000000); err == nil {
+	if err := w2.VerifyH28(0x01000000); err == nil {
 		t.Fatalf("VerifyH28 does not work as expected. section: 1, n: 0x01000000")
 	}
-	if err := g2.VerifyH28(0x00FFFFFF); err == nil {
+	if err := w2.VerifyH28(0x00FFFFFF); err == nil {
 		t.Fatalf("VerifyH28 does not work as expected. section: 1, n: 0x00FFFFFF")
 	}
 }
@@ -413,4 +413,10 @@ func TestWithH28Verifier(t *testing.T) {
 	if err := w.VerifyH28(20); err == nil || err.Error() != "bomb" {
 		t.Fatal("the H28Verifier was not called")
 	}
+}
+
+func TestWithObfuscation(t *testing.T) {
+	w1 := NewWUID("alpha", nil, WithObfuscation(1))
+	w1.Reset(1 << 36)
+	t.Logf("%#x", w1.Next())
 }
