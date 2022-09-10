@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/rand"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -12,45 +13,55 @@ import (
 	"github.com/edwingeng/slog"
 )
 
+const (
+	limbo = ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
+)
+
+func (w *WUID) Scavenger() *slog.Scavenger {
+	return w.Logger.(*slog.Scavenger)
+}
+
 func TestWUID_Next(t *testing.T) {
-	const total = 100
-	g := NewWUID("default", nil)
-	v := atomic.LoadInt64(&g.N)
-	for i := 0; i < total; i++ {
-		v++
-		if id := g.Next(); id != v {
-			t.Fatalf("the id is %d, while it should be %d", id, v)
+	for i := 0; i < 100; i++ {
+		w := NewWUID("alpha", nil)
+		w.Reset(int64(i+1) << 36)
+		v := atomic.LoadInt64(&w.N)
+		for j := 0; j < 100; j++ {
+			v++
+			if id := w.Next(); id != v {
+				t.Fatalf("the id is %d, while it should be %d", id, v)
+			}
 		}
 	}
 }
 
-type int64Slice []int64
-
-func (p int64Slice) Len() int           { return len(p) }
-func (p int64Slice) Less(i, j int) bool { return p[i] < p[j] }
-func (p int64Slice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-
 func TestWUID_Next_Concurrent(t *testing.T) {
-	const total = 10000
-	g := NewWUID("default", nil)
-	var m sync.Mutex
-	var a = make(int64Slice, 0, total)
+	w := NewWUID("alpha", nil)
+	var mu sync.Mutex
+	const N1 = 100
+	const N2 = 100
+	a := make([]int64, 0, N1*N2)
+
 	var wg sync.WaitGroup
-	wg.Add(total)
-	for i := 0; i < total; i++ {
+	for i := 0; i < N1; i++ {
+		wg.Add(1)
 		go func() {
-			id := g.Next()
-			m.Lock()
-			a = append(a, id)
-			m.Unlock()
-			wg.Done()
+			defer wg.Done()
+			for j := 0; j < N2; j++ {
+				id := w.Next()
+				mu.Lock()
+				a = append(a, id)
+				mu.Unlock()
+			}
 		}()
 	}
 
 	wg.Wait()
-	sort.Sort(a)
+	sort.Slice(a, func(i, j int) bool {
+		return a[i] < a[j]
+	})
 
-	for i := 0; i < total-1; i++ {
+	for i := 0; i < N1*N2-1; i++ {
 		if a[i] == a[i+1] {
 			t.Fatalf("duplication detected")
 		}
@@ -58,106 +69,160 @@ func TestWUID_Next_Concurrent(t *testing.T) {
 }
 
 func TestWUID_Next_Panic(t *testing.T) {
-	const total = 10000
-	g := NewWUID("default", nil)
-	atomic.StoreInt64(&g.N, PanicValue)
+	const total = 100
+	w := NewWUID("alpha", nil)
+	atomic.StoreInt64(&w.N, PanicValue)
 
-	var wg sync.WaitGroup
-	wg.Add(total)
+	ch := make(chan int64, total)
 	for i := 0; i < total; i++ {
 		go func() {
 			defer func() {
-				_ = recover()
-				wg.Done()
+				if r := recover(); r != nil {
+					ch <- 0
+				}
 			}()
 
-			g.Next()
-			t.Fatal("should not be here")
+			ch <- w.Next()
 		}()
 	}
-	wg.Wait()
+
+	for i := 0; i < total; i++ {
+		v := <-ch
+		if v != 0 {
+			t.Fatal("something is wrong with Next()")
+		}
+	}
 }
 
-func TestWUID_Next_Renew(t *testing.T) {
-	scav := slog.NewScavenger()
-	g := NewWUID("default", scav)
-	g.Renew = func() error {
-		g.Reset(((atomic.LoadInt64(&g.N) >> 36) + 1) << 36)
+func waitUntilRenewCalled(t *testing.T, renewals *int64, expected int64) {
+	t.Helper()
+	startTime := time.Now()
+	for time.Since(startTime) < time.Second {
+		if atomic.LoadInt64(renewals) != expected {
+			time.Sleep(time.Millisecond * 10)
+		}
+		return
+	}
+	t.Fatal("timeout")
+}
+
+func TestWUID_Renew(t *testing.T) {
+	w := NewWUID("alpha", slog.NewScavenger())
+	var renewCounter int64
+	w.Renew = func() error {
+		w.Reset(((atomic.LoadInt64(&w.N) >> 36) + 1) << 36)
+		atomic.AddInt64(&renewCounter, 1)
 		return nil
 	}
 
-	n1 := g.Next()
-	kk := ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
-
-	g.Reset((n1 >> 36 << 36) | kk)
-	g.Next()
-	time.Sleep(time.Millisecond * 200)
-	n2 := g.Next()
-
-	g.Reset((n2 >> 36 << 36) | kk)
-	g.Next()
-	time.Sleep(time.Millisecond * 200)
-	n3 := g.Next()
-
-	if n2>>36-n1>>36 != 1 || n3>>36-n2>>36 != 1 {
-		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>36, n2>>36, n3>>36)
+	w.Reset(limbo)
+	n1a := w.Next()
+	if n1a>>36 != 0 {
+		t.Fatal(`n1a>>36 != 0`)
 	}
 
-	var numInfo int
-	scav.Filter(func(level, msg string) bool {
-		if level == slog.LevelInfo {
-			numInfo++
+	waitUntilRenewCalled(t, &renewCounter, 1)
+	n1b := w.Next()
+	if n1b != 1<<36+1 {
+		t.Fatal(`n1b != 1<<36+1`)
+	}
+
+	w.Reset(1<<36 | limbo)
+	n2a := w.Next()
+	if n2a>>36 != 1 {
+		t.Fatal(`n2a>>36 != 1`)
+	}
+
+	waitUntilRenewCalled(t, &renewCounter, 2)
+	n2b := w.Next()
+	if n2b != 2<<36+1 {
+		t.Fatal(`n2b != 2<<36+1`)
+	}
+
+	w.Reset(2<<36 | limbo + RenewIntervalMask + 1)
+	n3a := w.Next()
+	if n3a>>36 != 2 {
+		t.Fatal(`n3a>>36 != 2`)
+	}
+
+	waitUntilRenewCalled(t, &renewCounter, 3)
+	n3b := w.Next()
+	if n3b != 3<<36+1 {
+		t.Fatal(`n3b != 3<<36+1`)
+	}
+
+	w.Reset(limbo + 1)
+	tmp := atomic.LoadInt64(&w.Stats.NumRenewAttempts)
+	for i := 0; i < 100; i++ {
+		w.Next()
+	}
+	if atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp {
+		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp`)
+	}
+
+	var num int
+	w.Scavenger().Filter(func(level, msg string) bool {
+		if level == slog.LevelInfo && strings.Contains(msg, "renew succeeded") {
+			num++
 		}
 		return true
 	})
-	if numInfo != 2 {
-		t.Fatalf("there should be 2 renew logs of the info type. actual: %d", numInfo)
+	if num != 3 {
+		t.Fatal(`num != 3`)
 	}
 }
 
 func TestWUID_Step(t *testing.T) {
 	const step = 16
-	scav := slog.NewScavenger()
-	g := NewWUID("default", scav, WithStep(step, 0))
-	g.Reset(17 << 36)
-	g.Renew = func() error {
-		g.Reset(((atomic.LoadInt64(&g.N) >> 36) + 1) << 36)
+	w := NewWUID("alpha", slog.NewScavenger(), WithStep(step, 0))
+	w.Reset(17 << 36)
+
+	var renewals int64
+	w.Renew = func() error {
+		w.Reset(((atomic.LoadInt64(&w.N) >> 36) + 1) << 36)
+		atomic.AddInt64(&renewals, 1)
 		return nil
 	}
 
 	for i := int64(1); i < 100; i++ {
-		if g.Next()&0x0FFFFFFFFF != step*i {
-			t.Fatal("g.Next()&0x0FFFFFFFFF != step*i")
+		if w.Next()&L36Mask != step*i {
+			t.Fatal("w.Next()&L36Mask != step*i")
 		}
 	}
 
-	n1 := g.Next()
-	kk := ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
+	n1 := w.Next()
+	w.Reset(((n1 >> 36 << 36) | limbo) & ^(step - 1))
+	w.Next()
+	waitUntilRenewCalled(t, &renewals, 1)
+	n2 := w.Next()
 
-	g.Reset(((n1 >> 36 << 36) | kk) & ^(step - 1))
-	g.Next()
-	time.Sleep(time.Millisecond * 200)
-	n2 := g.Next()
-
-	g.Reset(((n2 >> 36 << 36) | kk) & ^(step - 1))
-	g.Next()
-	time.Sleep(time.Millisecond * 200)
-	n3 := g.Next()
+	w.Reset(((n2 >> 36 << 36) | limbo) & ^(step - 1))
+	w.Next()
+	waitUntilRenewCalled(t, &renewals, 2)
+	n3 := w.Next()
 
 	if n2>>36-n1>>36 != 1 || n3>>36-n2>>36 != 1 {
 		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>36, n2>>36, n3>>36)
 	}
 
-	var numInfo int
-	scav.Filter(func(level, msg string) bool {
-		if level == slog.LevelInfo {
-			numInfo++
+	var num int
+	w.Scavenger().Filter(func(level, msg string) bool {
+		if level == slog.LevelInfo && strings.Contains(msg, "renew succeeded") {
+			num++
 		}
 		return true
 	})
-	if numInfo != 2 {
-		t.Fatalf("there should be 2 renew logs of the info type. actual: %d", numInfo)
+	if num != 2 {
+		t.Fatal(`num != 2`)
 	}
+
+	func() {
+		defer func() {
+			_ = recover()
+		}()
+		NewWUID("alpha", nil, WithStep(5, 0))
+		t.Fatal("WithStep should have panicked")
+	}()
 }
 
 func TestWUID_Floor(t *testing.T) {
@@ -166,13 +231,12 @@ func TestWUID_Floor(t *testing.T) {
 	for loop := 0; loop < 10000; loop++ {
 		step := allSteps[r.Intn(len(allSteps))]
 		floor := r.Int63n(step)
-		scav := slog.NewScavenger()
-		g := NewWUID("default", scav, WithStep(step, floor))
+		w := NewWUID("alpha", slog.NewScavenger(), WithStep(step, floor))
 		baseValue := r.Int63n(100) << 36
-		g.Reset(baseValue)
+		w.Reset(baseValue)
 
 		for i := int64(1); i < 100; i++ {
-			x := g.Next()
+			x := w.Next()
 			if floor != 0 {
 				if reminder := x % floor; reminder != 0 {
 					t.Fatal("reminder != 0")
@@ -183,68 +247,93 @@ func TestWUID_Floor(t *testing.T) {
 			}
 		}
 	}
+
+	func() {
+		defer func() {
+			_ = recover()
+		}()
+		NewWUID("alpha", nil, WithStep(1024, 2000))
+		t.Fatal("WithStep should have panicked")
+	}()
 }
 
-func TestWUID_Next_Renew_Fail(t *testing.T) {
-	scav := slog.NewScavenger()
-	g := NewWUID("default", scav)
-	g.Renew = func() error {
+func TestWUID_Renew_Error(t *testing.T) {
+	w := NewWUID("alpha", slog.NewScavenger())
+	var renewals int64
+	w.Renew = func() error {
+		atomic.AddInt64(&renewals, 1)
 		return errors.New("foo")
 	}
 
-	kk := ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
+	w.Reset((1 >> 36 << 36) | limbo)
+	w.Next()
+	waitUntilRenewCalled(t, &renewals, 1)
+	w.Next()
 
-	g.Reset((1 >> 36 << 36) | kk)
-	g.Next()
-	time.Sleep(time.Millisecond * 200)
-	g.Next()
+	w.Reset((2 >> 36 << 36) | limbo)
+	w.Next()
+	waitUntilRenewCalled(t, &renewals, 2)
 
-	g.Reset((2 >> 36 << 36) | kk)
-	g.Next()
-	time.Sleep(time.Millisecond * 200)
-	g.Next()
+	tmp := atomic.LoadInt64(&w.Stats.NumRenewAttempts)
+	for i := 0; i < 100; i++ {
+		w.Next()
+	}
+	if atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp {
+		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp`)
+	}
 
-	var numWarn int
-	scav = scav.Filter(func(level, msg string) bool {
-		if level == slog.LevelWarn {
-			numWarn++
+	var num int
+	w.Scavenger().Filter(func(level, msg string) bool {
+		if level == slog.LevelWarn && strings.Contains(msg, "renew failed") && strings.Contains(msg, "foo") {
+			num++
 		}
 		return true
 	})
-	if numWarn != 2 {
-		t.Fatalf("there should be 2 renew logs of the warn type. actual: %d", numWarn)
+	if num != 2 {
+		t.Fatal(`num != 2`)
 	}
 }
 
-func TestWUID_Next_Renew_Panic(t *testing.T) {
-	scav := slog.NewScavenger()
-	g := NewWUID("default", scav)
-	g.Renew = func() error {
+func TestWUID_Renew_Panic(t *testing.T) {
+	w := NewWUID("alpha", slog.NewScavenger())
+	var renewals int64
+	w.Renew = func() error {
+		atomic.AddInt64(&renewals, 1)
 		panic("foo")
 	}
 
-	n1 := g.Next()
-	kk := ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
-	g.Reset((n1 >> 36 << 36) | kk)
-	g.Next()
+	w.Reset((1 >> 36 << 36) | limbo)
+	w.Next()
+	waitUntilRenewCalled(t, &renewals, 1)
+	w.Next()
 
-	time.Sleep(time.Millisecond * 200)
+	w.Reset((2 >> 36 << 36) | limbo)
+	w.Next()
+	waitUntilRenewCalled(t, &renewals, 2)
 
-	var numWarn int
-	scav = scav.Filter(func(level, msg string) bool {
-		if level == slog.LevelWarn {
-			numWarn++
+	tmp := atomic.LoadInt64(&w.Stats.NumRenewAttempts)
+	for i := 0; i < 100; i++ {
+		w.Next()
+	}
+	if atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp {
+		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp`)
+	}
+
+	var num int
+	w.Scavenger().Filter(func(level, msg string) bool {
+		if level == slog.LevelWarn && strings.Contains(msg, "renew failed") && strings.Contains(msg, "foo") {
+			num++
 		}
 		return true
 	})
-	if numWarn != 1 {
-		t.Fatalf("there should be 1 renew logs of the warn type. actual: %d", numWarn)
+	if num != 2 {
+		t.Fatal(`num != 2`)
 	}
 }
 
 func TestWUID_VerifyH28(t *testing.T) {
-	g1 := NewWUID("default", nil)
-	g1.Reset(0x07FFFFFF << 36)
+	g1 := NewWUID("alpha", nil)
+	g1.Reset(H28Mask)
 	if err := g1.VerifyH28(100); err != nil {
 		t.Fatalf("VerifyH28 does not work as expected. n: 100, error: %s", err)
 	}
@@ -258,8 +347,8 @@ func TestWUID_VerifyH28(t *testing.T) {
 		t.Fatalf("VerifyH28 does not work as expected. n: 0x07FFFFFF")
 	}
 
-	g2 := NewWUID("default", nil, WithSection(1))
-	g2.Reset(0x07FFFFFF << 36)
+	g2 := NewWUID("alpha", nil, WithSection(1))
+	g2.Reset(H28Mask)
 	if err := g2.VerifyH28(100); err != nil {
 		t.Fatalf("VerifyH28 does not work as expected. section: 1, n: 100, error: %s", err)
 	}
@@ -275,14 +364,14 @@ func TestWUID_VerifyH28(t *testing.T) {
 }
 
 func TestWithSection_Panic(t *testing.T) {
-	for i := 0; i < 256; i++ {
+	for i := -100; i <= 100; i++ {
 		func(j int8) {
 			defer func() {
 				_ = recover()
 			}()
 			WithSection(j)
 			if j >= 8 {
-				t.Fatalf("WithSection should only accept values range from 0 to 7. j: %d", j)
+				t.Fatalf("WithSection should only accept the values in [0, 7]. j: %d", j)
 			}
 		}(int8(i))
 	}
@@ -300,28 +389,28 @@ func TestWithSection_Reset(t *testing.T) {
 				}
 			}()
 			for j := int8(1); j < 8; j++ {
-				g := NewWUID("default", nil, WithSection(j))
-				g.Reset(n)
-				v := atomic.LoadInt64(&g.N)
+				w := NewWUID("alpha", nil, WithSection(j))
+				w.Reset(n)
+				v := atomic.LoadInt64(&w.N)
 				if v>>60 != int64(j) {
-					t.Fatalf("g.Section does not work as expected. g.N: %x, n: %x, i: %d, j: %d", v, n, i, j)
+					t.Fatalf("w.Section does not work as expected. w.N: %x, n: %x, i: %d, j: %d", v, n, i, j)
 				}
 			}
 		}()
 	}
 }
 
-func TestWithRenewCallback(t *testing.T) {
-	g := NewWUID("default", nil, WithH28Verifier(func(h28 int64) error {
+func TestWithH28Verifier(t *testing.T) {
+	w := NewWUID("alpha", nil, WithH28Verifier(func(h28 int64) error {
 		if h28 >= 20 {
 			return errors.New("bomb")
 		}
 		return nil
 	}))
-	if err := g.VerifyH28(10); err != nil {
+	if err := w.VerifyH28(10); err != nil {
 		t.Fatal("the H28Verifier should not return error")
 	}
-	if err := g.VerifyH28(20); err == nil || err.Error() != "bomb" {
+	if err := w.VerifyH28(20); err == nil || err.Error() != "bomb" {
 		t.Fatal("the H28Verifier was not called")
 	}
 }

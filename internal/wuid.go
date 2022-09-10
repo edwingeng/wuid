@@ -41,6 +41,10 @@ type WUID struct {
 
 	sync.Mutex
 	Renew func() error
+
+	Stats struct {
+		NumRenewAttempts int64
+	}
 }
 
 func NewWUID(name string, logger slog.Logger, opts ...Option) (w *WUID) {
@@ -68,6 +72,7 @@ func (w *WUID) Next() int64 {
 		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. name: %s", w.Name))
 	}
 	if v2 >= CriticalValue && v2&RenewIntervalMask == 0 {
+		atomic.AddInt64(&w.Stats.NumRenewAttempts, 1)
 		go renewImpl(w)
 	}
 
@@ -202,14 +207,11 @@ func WithObfuscation(seed int) Option {
 	}
 	return func(w *WUID) {
 		w.Obfuscation = true
-		w.ObfuscationMask = hash(uint64(seed))
+		x := uint64(seed)
+		x = (x ^ (x >> 30)) * uint64(0xbf58476d1ce4e5b9)
+		x = (x ^ (x >> 27)) * uint64(0x94d049bb133111eb)
+		x = (x ^ (x >> 31)) & 0x7FFFFFFFFFFFFFFF
+		w.ObfuscationMask = int64(x)
 		w.Flags |= 1
 	}
-}
-
-func hash(x uint64) int64 {
-	x = (x ^ (x >> 30)) * uint64(0xbf58476d1ce4e5b9)
-	x = (x ^ (x >> 27)) * uint64(0x94d049bb133111eb)
-	x = (x ^ (x >> 31)) & 0x7FFFFFFFFFFFFFFF
-	return int64(x)
 }
