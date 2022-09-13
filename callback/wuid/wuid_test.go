@@ -3,9 +3,7 @@ package wuid
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"sync/atomic"
 	"testing"
 
@@ -105,30 +103,21 @@ func TestWUID_LoadH28WithCallback_Same(t *testing.T) {
 }
 
 func Example() {
+	callback := func() (int64, func(), error) {
+		var h28 int64
+		// ...
+		return h28, nil, nil
+	}
+
 	// Setup
-	g := NewWUID("default", nil)
-	_ = g.LoadH28WithCallback(func() (int64, func(), error) {
-		resp, err := http.Get("https://stackoverflow.com/")
-		if resp != nil {
-			defer func() {
-				_ = resp.Body.Close()
-			}()
-		}
-		if err != nil {
-			return 0, nil, err
-		}
-
-		bytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return 0, nil, err
-		}
-
-		fmt.Printf("Page size: %d (%#06x)\n\n", len(bytes), len(bytes))
-		return int64(len(bytes)), nil, nil
-	})
+	w := NewWUID("alpha", nil)
+	err := w.LoadH28WithCallback(callback)
+	if err != nil {
+		panic(err)
+	}
 
 	// Generate
 	for i := 0; i < 10; i++ {
-		fmt.Printf("%#016x\n", g.Next())
+		fmt.Printf("%#016x\n", w.Next())
 	}
 }

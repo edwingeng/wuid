@@ -130,11 +130,14 @@ func Example() {
 	}
 
 	// Setup
-	g := NewWUID("default", nil)
-	_ = g.LoadH28FromMongo(newClient, "test", "wuid", "default")
+	w := NewWUID("alpha", nil)
+	err := w.LoadH28FromMongo(newClient, "test", "wuid", "default")
+	if err != nil {
+		panic(err)
+	}
 
 	// Generate
 	for i := 0; i < 10; i++ {
-		fmt.Printf("%#016x\n", g.Next())
+		fmt.Printf("%#016x\n", w.Next())
 	}
 }

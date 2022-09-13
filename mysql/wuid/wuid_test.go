@@ -154,11 +154,14 @@ func Example() {
 	}
 
 	// Setup
-	g := NewWUID("default", nil)
-	_ = g.LoadH28FromMysql(newDB, "wuid")
+	w := NewWUID("alpha", nil)
+	err := w.LoadH28FromMysql(newDB, "wuid")
+	if err != nil {
+		panic(err)
+	}
 
 	// Generate
 	for i := 0; i < 10; i++ {
-		fmt.Printf("%#016x\n", g.Next())
+		fmt.Printf("%#016x\n", w.Next())
 	}
 }
