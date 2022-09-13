@@ -14,14 +14,13 @@ const (
 	PanicValue int64 = ((1 << 36) * 96 / 100) & ^1023
 	// CriticalValue indicates when to renew the high 28 bits
 	CriticalValue int64 = ((1 << 36) * 80 / 100) & ^1023
-	// RenewIntervalMask indicates how often renew is performed if it fails
+	// RenewIntervalMask indicates the 'time' between two renewal attempts
 	RenewIntervalMask int64 = 0x20000000 - 1
 )
 
 const (
-	H28Mask     = 0x07FFFFFF << 36
-	L36Mask     = 0x0FFFFFFFFF
-	SectionMask = 0x0FFFFFFFFFFFFFFF
+	H28Mask = 0x07FFFFFF << 36
+	L36Mask = 0x0FFFFFFFFF
 )
 
 type WUID struct {
@@ -57,9 +56,12 @@ func NewWUID(name string, logger slog.Logger, opts ...Option) (w *WUID) {
 	for _, opt := range opts {
 		opt(w)
 	}
-	if w.Floor != 0 {
-		w.ObfuscationMask |= w.Step - 1
+	if !w.Obfuscation || w.Floor == 0 {
+		return
 	}
+
+	ones := w.Step - 1
+	w.ObfuscationMask |= ones
 	return
 }
 
@@ -122,11 +124,24 @@ func (w *WUID) Reset(n int64) {
 	if n < 0 {
 		panic("n cannot be negative")
 	}
+	if n&L36Mask >= PanicValue {
+		panic("n will not last long")
+	}
+
 	if w.Monolithic {
-		atomic.StoreInt64(&w.N, n)
+		// Empty
 	} else {
-		v := n&SectionMask | w.Section
-		atomic.StoreInt64(&w.N, v)
+		const L60Mask = 0x0FFFFFFFFFFFFFFF
+		n = n&L60Mask | w.Section
+	}
+	if w.Floor > 1 {
+		if n&(w.Step-1) == 0 {
+			atomic.StoreInt64(&w.N, n)
+		} else {
+			atomic.StoreInt64(&w.N, n&^(w.Step-1)+w.Step)
+		}
+	} else {
+		atomic.StoreInt64(&w.N, n)
 	}
 }
 
@@ -193,6 +208,9 @@ func WithStep(step int64, floor int64) Option {
 		panic(fmt.Errorf("floor must be in between [0, %d)", step))
 	}
 	return func(w *WUID) {
+		if w.Step != 1 {
+			panic("a second WithStep detected")
+		}
 		w.Step = step
 		if floor >= 2 {
 			w.Floor = floor

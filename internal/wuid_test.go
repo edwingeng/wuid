@@ -172,91 +172,6 @@ func TestWUID_Renew(t *testing.T) {
 	}
 }
 
-func TestWUID_Step(t *testing.T) {
-	const step = 16
-	w := NewWUID("alpha", slog.NewScavenger(), WithStep(step, 0))
-	w.Reset(17 << 36)
-
-	var renewals int64
-	w.Renew = func() error {
-		w.Reset(((atomic.LoadInt64(&w.N) >> 36) + 1) << 36)
-		atomic.AddInt64(&renewals, 1)
-		return nil
-	}
-
-	for i := int64(1); i < 100; i++ {
-		if w.Next()&L36Mask != step*i {
-			t.Fatal("w.Next()&L36Mask != step*i")
-		}
-	}
-
-	n1 := w.Next()
-	w.Reset(((n1 >> 36 << 36) | limbo) & ^(step - 1))
-	w.Next()
-	waitUntilRenewCalled(t, &renewals, 1)
-	n2 := w.Next()
-
-	w.Reset(((n2 >> 36 << 36) | limbo) & ^(step - 1))
-	w.Next()
-	waitUntilRenewCalled(t, &renewals, 2)
-	n3 := w.Next()
-
-	if n2>>36-n1>>36 != 1 || n3>>36-n2>>36 != 1 {
-		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>36, n2>>36, n3>>36)
-	}
-
-	var num int
-	w.Scavenger().Filter(func(level, msg string) bool {
-		if level == slog.LevelInfo && strings.Contains(msg, "renew succeeded") {
-			num++
-		}
-		return true
-	})
-	if num != 2 {
-		t.Fatal(`num != 2`)
-	}
-
-	func() {
-		defer func() {
-			_ = recover()
-		}()
-		NewWUID("alpha", nil, WithStep(5, 0))
-		t.Fatal("WithStep should have panicked")
-	}()
-}
-
-func TestWUID_Floor(t *testing.T) {
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	allSteps := []int64{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
-	for loop := 0; loop < 10000; loop++ {
-		step := allSteps[r.Intn(len(allSteps))]
-		floor := r.Int63n(step)
-		w := NewWUID("alpha", slog.NewScavenger(), WithStep(step, floor))
-		baseValue := r.Int63n(100) << 36
-		w.Reset(baseValue)
-
-		for i := int64(1); i < 100; i++ {
-			x := w.Next()
-			if floor != 0 {
-				if reminder := x % floor; reminder != 0 {
-					t.Fatal("reminder != 0")
-				}
-			}
-			if x <= baseValue+i*step-step || x > baseValue+i*step {
-				t.Fatal("x <= baseValue+i*step-step || x > baseValue+i*step")
-			}
-		}
-	}
-
-	func() {
-		defer func() {
-			_ = recover()
-		}()
-		NewWUID("alpha", nil, WithStep(1024, 2000))
-		t.Fatal("WithStep should have panicked")
-	}()
-}
-
 func TestWUID_Renew_Error(t *testing.T) {
 	w := NewWUID("alpha", slog.NewScavenger())
 	var renewals int64
@@ -331,6 +246,109 @@ func TestWUID_Renew_Panic(t *testing.T) {
 	}
 }
 
+func TestWUID_Step(t *testing.T) {
+	const step = 16
+	w := NewWUID("alpha", slog.NewScavenger(), WithStep(step, 0))
+	w.Reset(17 << 36)
+
+	var renewals int64
+	w.Renew = func() error {
+		w.Reset(((atomic.LoadInt64(&w.N) >> 36) + 1) << 36)
+		atomic.AddInt64(&renewals, 1)
+		return nil
+	}
+
+	for i := int64(1); i < 100; i++ {
+		if w.Next()&L36Mask != step*i {
+			t.Fatal("w.Next()&L36Mask != step*i")
+		}
+	}
+
+	n1 := w.Next()
+	w.Reset(((n1 >> 36 << 36) | limbo) & ^(step - 1))
+	w.Next()
+	waitUntilRenewCalled(t, &renewals, 1)
+	n2 := w.Next()
+
+	w.Reset(((n2 >> 36 << 36) | limbo) & ^(step - 1))
+	w.Next()
+	waitUntilRenewCalled(t, &renewals, 2)
+	n3 := w.Next()
+
+	if n2>>36-n1>>36 != 1 || n3>>36-n2>>36 != 1 {
+		t.Fatalf("the renew mechanism does not work as expected: %x, %x, %x", n1>>36, n2>>36, n3>>36)
+	}
+
+	var num int
+	w.Scavenger().Filter(func(level, msg string) bool {
+		if level == slog.LevelInfo && strings.Contains(msg, "renew succeeded") {
+			num++
+		}
+		return true
+	})
+	if num != 2 {
+		t.Fatal(`num != 2`)
+	}
+
+	func() {
+		defer func() {
+			_ = recover()
+		}()
+		NewWUID("alpha", nil, WithStep(5, 0))
+		t.Fatal("WithStep should have panicked")
+	}()
+}
+
+func TestWUID_Floor(t *testing.T) {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	allSteps := []int64{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
+	for loop := 0; loop < 10000; loop++ {
+		step := allSteps[r.Intn(len(allSteps))]
+		var floor = r.Int63n(step)
+		w := NewWUID("alpha", slog.NewScavenger(), WithStep(step, floor))
+		if floor < 2 {
+			if w.Flags != 0 {
+				t.Fatal(`w.Flags != 0`)
+			}
+		} else {
+			if w.Flags != 2 {
+				t.Fatal(`w.Flags != 2`)
+			}
+		}
+
+		w.Reset(r.Int63n(100) << 36)
+		baseValue := atomic.LoadInt64(&w.N)
+
+		for i := int64(1); i < 100; i++ {
+			x := w.Next()
+			if floor != 0 {
+				if reminder := x % floor; reminder != 0 {
+					t.Fatal("reminder != 0")
+				}
+			}
+			if x <= baseValue+i*step-step || x > baseValue+i*step {
+				t.Fatal("x <= baseValue+i*step-step || x > baseValue+i*step")
+			}
+		}
+	}
+
+	func() {
+		defer func() {
+			_ = recover()
+		}()
+		NewWUID("alpha", nil, WithStep(1024, 2000))
+		t.Fatal("WithStep should have panicked")
+	}()
+
+	func() {
+		defer func() {
+			_ = recover()
+		}()
+		NewWUID("alpha", nil, WithStep(1024, 0), WithStep(128, 0))
+		t.Fatal("WithStep should have panicked")
+	}()
+}
+
 func TestWUID_VerifyH28(t *testing.T) {
 	w1 := NewWUID("alpha", nil)
 	w1.Reset(H28Mask)
@@ -398,6 +416,15 @@ func TestWithSection_Reset(t *testing.T) {
 			}
 		}()
 	}
+
+	func() {
+		defer func() {
+			_ = recover()
+		}()
+		w := NewWUID("alpha", nil)
+		w.Reset((1 << 36) | PanicValue)
+		t.Fatal("Reset should have panicked")
+	}()
 }
 
 func TestWithH28Verifier(t *testing.T) {
@@ -417,6 +444,76 @@ func TestWithH28Verifier(t *testing.T) {
 
 func TestWithObfuscation(t *testing.T) {
 	w1 := NewWUID("alpha", nil, WithObfuscation(1))
+	if w1.Flags != 1 {
+		t.Fatal(`w1.Flags != 1`)
+	}
+	if w1.ObfuscationMask == 0 {
+		t.Fatal(`w1.ObfuscationMask == 0`)
+	}
+
 	w1.Reset(1 << 36)
-	t.Logf("%#x", w1.Next())
+	for i := 1; i < 100; i++ {
+		v := w1.Next()
+		if v&H28Mask != 1<<36 {
+			t.Fatal(`v&H28Mask != 1<<36`)
+		}
+		tmp := v ^ w1.ObfuscationMask
+		if tmp&L36Mask != int64(i) {
+			t.Fatal(`tmp&L36Mask != int64(i)`)
+		}
+	}
+
+	w2 := NewWUID("alpha", nil, WithObfuscation(1), WithStep(128, 100))
+	if w2.Flags != 3 {
+		t.Fatal(`w2.Flags != 3`)
+	}
+	if w2.ObfuscationMask == 0 {
+		t.Fatal(`w2.ObfuscationMask == 0`)
+	}
+
+	w2.Reset(1 << 36)
+	for i := 1; i < 100; i++ {
+		v := w2.Next()
+		if v%w2.Floor != 0 {
+			t.Fatal(`v%w2.Floor != 0`)
+		}
+		if v&H28Mask != 1<<36 {
+			t.Fatal(`v&H28Mask != 1<<36`)
+		}
+		tmp := v ^ w2.ObfuscationMask
+		if tmp&L36Mask&^(w2.Step-1) != w2.Step*int64(i) {
+			t.Fatal(`tmp&L36Mask&^(w2.Step-1) != w2.Step*int64(i)`)
+		}
+	}
+
+	w3 := NewWUID("alpha", nil, WithObfuscation(1), WithStep(1024, 659))
+	if w3.Flags != 3 {
+		t.Fatal(`w3.Flags != 3`)
+	}
+	if w3.ObfuscationMask == 0 {
+		t.Fatal(`w3.ObfuscationMask == 0`)
+	}
+
+	w3.Reset(1<<36 + 1)
+	for i := 1; i < 100; i++ {
+		v := w3.Next()
+		if v%w3.Floor != 0 {
+			t.Fatal(`v%w3.Floor != 0`)
+		}
+		if v&H28Mask != 1<<36 {
+			t.Fatal(`v&H28Mask != 1<<36`)
+		}
+		tmp := v ^ w3.ObfuscationMask
+		if tmp&L36Mask&^(w3.Step-1) != w3.Step*int64(i+1) {
+			t.Fatal(`tmp&L36Mask&^(w3.Step-1) != w3.Step*int64(i+1)`)
+		}
+	}
+
+	func() {
+		defer func() {
+			_ = recover()
+		}()
+		NewWUID("alpha", nil, WithObfuscation(0))
+		t.Fatal("WithObfuscation should have panicked")
+	}()
 }
