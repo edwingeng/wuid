@@ -1,10 +1,11 @@
 # Overview
-- WUID is a globally unique number generator. It is tens of times faster than UUID. Each instance can even generate 100M unique numbers in a single second.
-- In the nutshell, WUID generates unique 64-bit integers in sequence. The high 28 bits are loaded from a data store. By now, Redis, MySQL, MongoDB and Callback are supported.
-- WUID renews the high 28 bits automatically when the low 36 bits are about to run out.
-- WUID guarantees the uniqueness as long as all its instances share a same data store.
-- Number obfuscation is supported.
-- WUID is lock free.
+- WUID is a globally unique number generator.
+- It is much faster than UUID. Each instance can even generate 100M unique numbers in a single second.
+- In the nutshell, WUID generates 64-bit integers in sequence. The high 28 bits are loaded from a data store. By now, Redis, MySQL and MongoDB are supported.
+- The uniqueness is guaranteed as long as all WUID instances share a same data store or each of them has a different section ID.
+- WUID automatically renews the high 28 bits when the low 36 bits are about to run out.
+- WUID is thread-safe, and lock free.
+- Obfuscation is supported.
 
 # Benchmarks
 ```
@@ -32,7 +33,7 @@ go get -u github.com/edwingeng/wuid
 # Usages
 ### Redis
 ``` go
-import "github.com/edwingeng/wuid/redis/wuid"
+import "github.com/edwingeng/wuid/redis/v8/wuid"
 
 newClient := func() (redis.UniversalClient, bool, error) {
     var client redis.UniversalClient
@@ -41,12 +42,15 @@ newClient := func() (redis.UniversalClient, bool, error) {
 }
 
 // Setup
-g := NewWUID("default", nil)
-_ = g.LoadH28FromRedis(newClient, "wuid")
+w := NewWUID("alpha", nil)
+err := w.LoadH28FromRedis(newClient, "wuid")
+if err != nil {
+    panic(err)
+}
 
 // Generate
 for i := 0; i < 10; i++ {
-    fmt.Printf("%#016x\n", g.Next())
+    fmt.Printf("%#016x\n", w.Next())
 }
 ```
 
@@ -61,12 +65,15 @@ newDB := func() (*sql.DB, bool, error) {
 }
 
 // Setup
-g := NewWUID("default", nil)
-_ = g.LoadH28FromMysql(newDB, "wuid")
+w := NewWUID("alpha", nil)
+err := w.LoadH28FromMysql(newDB, "wuid")
+if err != nil {
+    panic(err)
+}
 
 // Generate
 for i := 0; i < 10; i++ {
-    fmt.Printf("%#016x\n", g.Next())
+    fmt.Printf("%#016x\n", w.Next())
 }
 ```
 
@@ -81,12 +88,15 @@ newClient := func() (*mongo.Client, bool, error) {
 }
 
 // Setup
-g := NewWUID("default", nil)
-_ = g.LoadH28FromMongo(newClient, "test", "wuid", "default")
+w := NewWUID("alpha", nil)
+err := w.LoadH28FromMongo(newClient, "test", "wuid", "default")
+if err != nil {
+    panic(err)
+}
 
 // Generate
 for i := 0; i < 10; i++ {
-    fmt.Printf("%#016x\n", g.Next())
+    fmt.Printf("%#016x\n", w.Next())
 }
 ```
 
@@ -94,31 +104,22 @@ for i := 0; i < 10; i++ {
 ``` go
 import "github.com/edwingeng/wuid/callback/wuid"
 
+callback := func() (int64, func(), error) {
+    var h28 int64
+    // ...
+    return h28, nil, nil
+}
+
 // Setup
-g := NewWUID("default", nil)
-_ = g.LoadH28WithCallback(func() (int64, func(), error) {
-    resp, err := http.Get("https://stackoverflow.com/")
-    if resp != nil {
-        defer func() {
-            _ = resp.Body.Close()
-        }()
-    }
-    if err != nil {
-        return 0, nil, err
-    }
-
-    bytes, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        return 0, nil, err
-    }
-
-    fmt.Printf("Page size: %d (%#06x)\n\n", len(bytes), len(bytes))
-    return int64(len(bytes)), nil, nil
-})
+w := NewWUID("alpha", nil)
+err := w.LoadH28WithCallback(callback)
+if err != nil {
+    panic(err)
+}
 
 // Generate
 for i := 0; i < 10; i++ {
-    fmt.Printf("%#016x\n", g.Next())
+    fmt.Printf("%#016x\n", w.Next())
 }
 ```
 
@@ -134,12 +135,12 @@ CREATE TABLE IF NOT EXISTS `wuid` (
 
 # Options
 
-- `WithObfuscation` enables number obfuscation.
-- `WithStep` sets the step and the floor for each number.
 - `WithSection` brands a section ID on each number. A section ID must be in between [0, 7].
+- `WithStep` sets the step and the floor for each number.
+- `WithObfuscation` enables number obfuscation.
 
 # Attentions
-It is highly recommended to pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed", which indicates that the low 36 bits are about to run out in hours to hundreds of hours, and WUID failed to get a new number from your data store. But don't worry too much, WUID will make an attempt once in a while. 
+It is highly recommended to pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed". It indicates that the low 36 bits are about to run out in hours to hundreds of hours, and the renewal program failed for some reason. WUID will make many renewal attempts until succeeded or exhausted. 
 
 # Special thanks
 - [dustinfog](https://github.com/dustinfog)
