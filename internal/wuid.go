@@ -19,6 +19,10 @@ const (
 )
 
 const (
+	Bye = ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
+)
+
+const (
 	H28Mask = 0x07FFFFFF << 36
 	L36Mask = 0x0FFFFFFFFF
 )

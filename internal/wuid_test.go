@@ -13,10 +13,6 @@ import (
 	"github.com/edwingeng/slog"
 )
 
-const (
-	limbo = ((CriticalValue + RenewIntervalMask) & ^RenewIntervalMask) - 1
-)
-
 func (w *WUID) Scavenger() *slog.Scavenger {
 	return w.Logger.(*slog.Scavenger)
 }
@@ -115,7 +111,7 @@ func TestWUID_Renew(t *testing.T) {
 		return nil
 	}
 
-	w.Reset(limbo)
+	w.Reset(Bye)
 	n1a := w.Next()
 	if n1a>>36 != 0 {
 		t.Fatal(`n1a>>36 != 0`)
@@ -127,7 +123,7 @@ func TestWUID_Renew(t *testing.T) {
 		t.Fatal(`n1b != 1<<36+1`)
 	}
 
-	w.Reset(1<<36 | limbo)
+	w.Reset(1<<36 | Bye)
 	n2a := w.Next()
 	if n2a>>36 != 1 {
 		t.Fatal(`n2a>>36 != 1`)
@@ -139,7 +135,7 @@ func TestWUID_Renew(t *testing.T) {
 		t.Fatal(`n2b != 2<<36+1`)
 	}
 
-	w.Reset(2<<36 | limbo + RenewIntervalMask + 1)
+	w.Reset(2<<36 | Bye + RenewIntervalMask + 1)
 	n3a := w.Next()
 	if n3a>>36 != 2 {
 		t.Fatal(`n3a>>36 != 2`)
@@ -151,7 +147,7 @@ func TestWUID_Renew(t *testing.T) {
 		t.Fatal(`n3b != 3<<36+1`)
 	}
 
-	w.Reset(limbo + 1)
+	w.Reset(Bye + 1)
 	tmp := atomic.LoadInt64(&w.Stats.NumRenewAttempts)
 	for i := 0; i < 100; i++ {
 		w.Next()
@@ -180,12 +176,12 @@ func TestWUID_Renew_Error(t *testing.T) {
 		return errors.New("foo")
 	}
 
-	w.Reset((1 >> 36 << 36) | limbo)
+	w.Reset((1 >> 36 << 36) | Bye)
 	w.Next()
 	waitUntilRenewCalled(t, &renewals, 1)
 	w.Next()
 
-	w.Reset((2 >> 36 << 36) | limbo)
+	w.Reset((2 >> 36 << 36) | Bye)
 	w.Next()
 	waitUntilRenewCalled(t, &renewals, 2)
 
@@ -217,12 +213,12 @@ func TestWUID_Renew_Panic(t *testing.T) {
 		panic("foo")
 	}
 
-	w.Reset((1 >> 36 << 36) | limbo)
+	w.Reset((1 >> 36 << 36) | Bye)
 	w.Next()
 	waitUntilRenewCalled(t, &renewals, 1)
 	w.Next()
 
-	w.Reset((2 >> 36 << 36) | limbo)
+	w.Reset((2 >> 36 << 36) | Bye)
 	w.Next()
 	waitUntilRenewCalled(t, &renewals, 2)
 
@@ -265,12 +261,12 @@ func TestWUID_Step(t *testing.T) {
 	}
 
 	n1 := w.Next()
-	w.Reset(((n1 >> 36 << 36) | limbo) & ^(step - 1))
+	w.Reset(((n1 >> 36 << 36) | Bye) & ^(step - 1))
 	w.Next()
 	waitUntilRenewCalled(t, &renewals, 1)
 	n2 := w.Next()
 
-	w.Reset(((n2 >> 36 << 36) | limbo) & ^(step - 1))
+	w.Reset(((n2 >> 36 << 36) | Bye) & ^(step - 1))
 	w.Next()
 	waitUntilRenewCalled(t, &renewals, 2)
 	n3 := w.Next()
