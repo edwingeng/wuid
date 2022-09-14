@@ -3,18 +3,17 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"github.com/edwingeng/slog"
 	"sync"
 	"sync/atomic"
-
-	"github.com/edwingeng/slog"
 )
 
 const (
-	// PanicValue indicates when Next starts to panic
+	// PanicValue indicates when Next starts to panic.
 	PanicValue int64 = ((1 << 36) * 96 / 100) & ^1023
-	// CriticalValue indicates when to renew the high 28 bits
+	// CriticalValue indicates when to renew the high 28 bits.
 	CriticalValue int64 = ((1 << 36) * 80 / 100) & ^1023
-	// RenewIntervalMask indicates the 'time' between two renewal attempts
+	// RenewIntervalMask indicates the 'time' between two renewal attempts.
 	RenewIntervalMask int64 = 0x20000000 - 1
 )
 
@@ -76,7 +75,7 @@ func (w *WUID) Next() int64 {
 	if v2 >= PanicValue {
 		panicValue := v1&H28Mask | PanicValue
 		atomic.CompareAndSwapInt64(&w.N, v1, panicValue)
-		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. name: %s", w.Name))
+		panic(fmt.Errorf("the low 36 bits are about to run out"))
 	}
 	if v2 >= CriticalValue && v2&RenewIntervalMask == 0 {
 		go renewImpl(w)
@@ -133,7 +132,7 @@ func (w *WUID) Reset(n int64) {
 		panic("n cannot be negative")
 	}
 	if n&L36Mask >= PanicValue {
-		panic("n will not last long")
+		panic("n is too old")
 	}
 
 	if w.Monolithic {
@@ -155,27 +154,27 @@ func (w *WUID) Reset(n int64) {
 
 func (w *WUID) VerifyH28(h28 int64) error {
 	if h28 <= 0 {
-		return errors.New("h28 must be positive. name: " + w.Name)
+		return errors.New("h28 must be positive")
 	}
 
 	if w.Monolithic {
 		if h28 > 0x07FFFFFF {
-			return errors.New("h28 should not exceed 0x07FFFFFF. name: " + w.Name)
+			return errors.New("h28 should not exceed 0x07FFFFFF")
 		}
 	} else {
 		if h28 > 0x00FFFFFF {
-			return errors.New("h28 should not exceed 0x00FFFFFF. name: " + w.Name)
+			return errors.New("h28 should not exceed 0x00FFFFFF")
 		}
 	}
 
 	current := atomic.LoadInt64(&w.N) >> 36
 	if w.Monolithic {
 		if h28 == current {
-			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, w.Name)
+			return fmt.Errorf("h28 should be a different value other than %d", h28)
 		}
 	} else {
 		if h28 == current&0x00FFFFFF {
-			return fmt.Errorf("h28 should be a different value other than %d. name: %s", h28, w.Name)
+			return fmt.Errorf("h28 should be a different value other than %d", h28)
 		}
 	}
 
@@ -190,6 +189,12 @@ func (w *WUID) VerifyH28(h28 int64) error {
 
 type Option func(w *WUID)
 
+func WithH28Verifier(cb func(h28 int64) error) Option {
+	return func(w *WUID) {
+		w.H28Verifier = cb
+	}
+}
+
 func WithSection(section int8) Option {
 	if section < 0 || section > 7 {
 		panic("section must be in between [0, 7]")
@@ -197,12 +202,6 @@ func WithSection(section int8) Option {
 	return func(w *WUID) {
 		w.Monolithic = false
 		w.Section = int64(section) << 60
-	}
-}
-
-func WithH28Verifier(cb func(h28 int64) error) Option {
-	return func(w *WUID) {
-		w.H28Verifier = cb
 	}
 }
 

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"github.com/edwingeng/slog"
 	"math/rand"
 	"sort"
 	"strings"
@@ -9,8 +10,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/edwingeng/slog"
 )
 
 func (w *WUID) Scavenger() *slog.Scavenger {
@@ -445,6 +444,7 @@ func TestWithH28Verifier(t *testing.T) {
 	}
 }
 
+//gocyclo:ignore
 func TestWithObfuscation(t *testing.T) {
 	w1 := NewWUID("alpha", nil, WithObfuscation(1))
 	if w1.Flags != 1 {

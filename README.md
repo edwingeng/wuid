@@ -1,6 +1,6 @@
 # Overview
-- WUID is a globally unique number generator.
-- It is much faster than UUID. Each instance can even generate 100M unique numbers in a single second.
+- WUID is a universal unique identifier generator.
+- It is much faster than traditional UUID. Each WUID instance can even generate 100M unique identifiers in a single second.
 - In the nutshell, WUID generates 64-bit integers in sequence. The high 28 bits are loaded from a data store. By now, Redis, MySQL and MongoDB are supported.
 - The uniqueness is guaranteed as long as all WUID instances share a same data store or each of them has a different section ID.
 - WUID automatically renews the high 28 bits when the low 36 bits are about to run out.
@@ -58,7 +58,7 @@ for i := 0; i < 10; i++ {
 ``` go
 import "github.com/edwingeng/wuid/mysql/wuid"
 
-newDB := func() (*sql.DB, bool, error) {
+openDB := func() (*sql.DB, bool, error) {
     var db *sql.DB
     // ...
     return db, true, nil
@@ -66,7 +66,7 @@ newDB := func() (*sql.DB, bool, error) {
 
 // Setup
 w := NewWUID("alpha", nil)
-err := w.LoadH28FromMysql(newDB, "wuid")
+err := w.LoadH28FromMysql(openDB, "wuid")
 if err != nil {
     panic(err)
 }
@@ -135,8 +135,8 @@ CREATE TABLE IF NOT EXISTS `wuid` (
 
 # Options
 
-- `WithSection` brands a section ID on each number. A section ID must be in between [0, 7].
-- `WithStep` sets the step and the floor for each number.
+- `WithSection` brands a section ID on each generated number. A section ID must be in between [0, 7].
+- `WithStep` sets the step and the floor for each generated number.
 - `WithObfuscation` enables number obfuscation.
 
 # Attentions

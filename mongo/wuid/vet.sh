@@ -32,19 +32,17 @@ function printUsage() {
     $colorful && tput setaf 7
 }
 
-docker run --name mysql-server -p 3306:3306 -e MYSQL_ROOT_PASSWORD=hello -d mysql
-[[ $? -ne 0 ]] && exit 1
+printImportantMessage "====== gofmt"
+gofmt -w .
 
-printImportantMessage "It may take quite a few seconds to get ready."
-for ((i=0;i<1000;i++)); do
-    docker run -it --rm mysql mysqladmin ping -h host.docker.internal --silent
-    [[ $? -eq 0 ]] && echo "Ready." && break
-    echo "Waiting $((i+1))..."
-    sleep 1
-done
+printImportantMessage "====== go vet"
+go vet ./...
 
-sleep 1
-docker run -v `pwd`/db.sql:/tmp/db.sql -it --rm mysql /bin/bash -c 'cat /tmp/db.sql | mysql -h host.docker.internal -u root -phello'
-[[ $? -ne 0 ]] && exit 1
+printImportantMessage "====== gocyclo"
+gocyclo -over 15 .
 
-echo "Job done."
+printImportantMessage "====== ineffassign"
+ineffassign ./...
+
+printImportantMessage "====== misspell"
+misspell *
