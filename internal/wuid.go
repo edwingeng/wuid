@@ -47,6 +47,7 @@ type WUID struct {
 
 	Stats struct {
 		NumRenewAttempts int64
+		NumRenewed       int64
 	}
 }
 
@@ -78,7 +79,6 @@ func (w *WUID) Next() int64 {
 		panic(fmt.Errorf("<wuid> the low 36 bits are about to run out. name: %s", w.Name))
 	}
 	if v2 >= CriticalValue && v2&RenewIntervalMask == 0 {
-		atomic.AddInt64(&w.Stats.NumRenewAttempts, 1)
 		go renewImpl(w)
 	}
 
@@ -104,6 +104,9 @@ func (w *WUID) Next() int64 {
 
 func renewImpl(w *WUID) {
 	defer func() {
+		atomic.AddInt64(&w.Stats.NumRenewAttempts, 1)
+	}()
+	defer func() {
 		if r := recover(); r != nil {
 			w.Warnf("<wuid> panic, renew failed. name: %s, reason: %+v", w.Name, r)
 		}
@@ -114,6 +117,7 @@ func renewImpl(w *WUID) {
 		w.Warnf("<wuid> renew failed. name: %s, reason: %+v", w.Name, err)
 	} else {
 		w.Infof("<wuid> renew succeeded. name: %s", w.Name)
+		atomic.AddInt64(&w.Stats.NumRenewed, 1)
 	}
 }
 

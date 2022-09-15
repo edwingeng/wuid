@@ -90,24 +90,34 @@ func TestWUID_Next_Panic(t *testing.T) {
 	}
 }
 
-func waitUntilRenewCalled(t *testing.T, renewals *int64, expected int64) {
+func waitUntilNumRenewAttemptsReaches(t *testing.T, w *WUID, expected int64) {
 	t.Helper()
 	startTime := time.Now()
 	for time.Since(startTime) < time.Second {
-		if atomic.LoadInt64(renewals) != expected {
-			time.Sleep(time.Millisecond * 10)
+		if atomic.LoadInt64(&w.Stats.NumRenewAttempts) == expected {
+			return
 		}
-		return
+		time.Sleep(time.Millisecond * 10)
+	}
+	t.Fatal("timeout")
+}
+
+func waitUntilNumRenewedReaches(t *testing.T, w *WUID, expected int64) {
+	t.Helper()
+	startTime := time.Now()
+	for time.Since(startTime) < time.Second {
+		if atomic.LoadInt64(&w.Stats.NumRenewed) == expected {
+			return
+		}
+		time.Sleep(time.Millisecond * 10)
 	}
 	t.Fatal("timeout")
 }
 
 func TestWUID_Renew(t *testing.T) {
 	w := NewWUID("alpha", slog.NewScavenger())
-	var renewCounter int64
 	w.Renew = func() error {
 		w.Reset(((atomic.LoadInt64(&w.N) >> 36) + 1) << 36)
-		atomic.AddInt64(&renewCounter, 1)
 		return nil
 	}
 
@@ -117,7 +127,7 @@ func TestWUID_Renew(t *testing.T) {
 		t.Fatal(`n1a>>36 != 0`)
 	}
 
-	waitUntilRenewCalled(t, &renewCounter, 1)
+	waitUntilNumRenewedReaches(t, w, 1)
 	n1b := w.Next()
 	if n1b != 1<<36+1 {
 		t.Fatal(`n1b != 1<<36+1`)
@@ -129,7 +139,7 @@ func TestWUID_Renew(t *testing.T) {
 		t.Fatal(`n2a>>36 != 1`)
 	}
 
-	waitUntilRenewCalled(t, &renewCounter, 2)
+	waitUntilNumRenewedReaches(t, w, 2)
 	n2b := w.Next()
 	if n2b != 2<<36+1 {
 		t.Fatal(`n2b != 2<<36+1`)
@@ -141,19 +151,18 @@ func TestWUID_Renew(t *testing.T) {
 		t.Fatal(`n3a>>36 != 2`)
 	}
 
-	waitUntilRenewCalled(t, &renewCounter, 3)
+	waitUntilNumRenewedReaches(t, w, 3)
 	n3b := w.Next()
 	if n3b != 3<<36+1 {
 		t.Fatal(`n3b != 3<<36+1`)
 	}
 
 	w.Reset(Bye + 1)
-	tmp := atomic.LoadInt64(&w.Stats.NumRenewAttempts)
 	for i := 0; i < 100; i++ {
 		w.Next()
 	}
-	if atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp {
-		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp`)
+	if atomic.LoadInt64(&w.Stats.NumRenewAttempts) != 3 {
+		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewAttempts) != 3`)
 	}
 
 	var num int
@@ -170,27 +179,27 @@ func TestWUID_Renew(t *testing.T) {
 
 func TestWUID_Renew_Error(t *testing.T) {
 	w := NewWUID("alpha", slog.NewScavenger())
-	var renewals int64
 	w.Renew = func() error {
-		atomic.AddInt64(&renewals, 1)
 		return errors.New("foo")
 	}
 
 	w.Reset((1 >> 36 << 36) | Bye)
 	w.Next()
-	waitUntilRenewCalled(t, &renewals, 1)
+	waitUntilNumRenewAttemptsReaches(t, w, 1)
 	w.Next()
 
 	w.Reset((2 >> 36 << 36) | Bye)
 	w.Next()
-	waitUntilRenewCalled(t, &renewals, 2)
+	waitUntilNumRenewAttemptsReaches(t, w, 2)
 
-	tmp := atomic.LoadInt64(&w.Stats.NumRenewAttempts)
 	for i := 0; i < 100; i++ {
 		w.Next()
 	}
-	if atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp {
-		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp`)
+	if atomic.LoadInt64(&w.Stats.NumRenewAttempts) != 2 {
+		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewAttempts) != 2`)
+	}
+	if atomic.LoadInt64(&w.Stats.NumRenewed) != 0 {
+		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewed) != 0`)
 	}
 
 	var num int
@@ -207,27 +216,27 @@ func TestWUID_Renew_Error(t *testing.T) {
 
 func TestWUID_Renew_Panic(t *testing.T) {
 	w := NewWUID("alpha", slog.NewScavenger())
-	var renewals int64
 	w.Renew = func() error {
-		atomic.AddInt64(&renewals, 1)
 		panic("foo")
 	}
 
 	w.Reset((1 >> 36 << 36) | Bye)
 	w.Next()
-	waitUntilRenewCalled(t, &renewals, 1)
+	waitUntilNumRenewAttemptsReaches(t, w, 1)
 	w.Next()
 
 	w.Reset((2 >> 36 << 36) | Bye)
 	w.Next()
-	waitUntilRenewCalled(t, &renewals, 2)
+	waitUntilNumRenewAttemptsReaches(t, w, 2)
 
-	tmp := atomic.LoadInt64(&w.Stats.NumRenewAttempts)
 	for i := 0; i < 100; i++ {
 		w.Next()
 	}
-	if atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp {
-		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewAttempts) != tmp`)
+	if atomic.LoadInt64(&w.Stats.NumRenewAttempts) != 2 {
+		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewAttempts) != 2`)
+	}
+	if atomic.LoadInt64(&w.Stats.NumRenewed) != 0 {
+		t.Fatal(`atomic.LoadInt64(&w.Stats.NumRenewed) != 0`)
 	}
 
 	var num int
@@ -247,10 +256,8 @@ func TestWUID_Step(t *testing.T) {
 	w := NewWUID("alpha", slog.NewScavenger(), WithStep(step, 0))
 	w.Reset(17 << 36)
 
-	var renewals int64
 	w.Renew = func() error {
 		w.Reset(((atomic.LoadInt64(&w.N) >> 36) + 1) << 36)
-		atomic.AddInt64(&renewals, 1)
 		return nil
 	}
 
@@ -263,12 +270,12 @@ func TestWUID_Step(t *testing.T) {
 	n1 := w.Next()
 	w.Reset(((n1 >> 36 << 36) | Bye) & ^(step - 1))
 	w.Next()
-	waitUntilRenewCalled(t, &renewals, 1)
+	waitUntilNumRenewedReaches(t, w, 1)
 	n2 := w.Next()
 
 	w.Reset(((n2 >> 36 << 36) | Bye) & ^(step - 1))
 	w.Next()
-	waitUntilRenewCalled(t, &renewals, 2)
+	waitUntilNumRenewedReaches(t, w, 2)
 	n3 := w.Next()
 
 	if n2>>36-n1>>36 != 1 || n3>>36-n2>>36 != 1 {
