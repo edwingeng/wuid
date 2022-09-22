@@ -1,10 +1,10 @@
 # Overview
-- WUID is a universal unique identifier generator.
-- It is much faster than traditional UUID. Each WUID instance can even generate 100M unique identifiers in a single second.
-- In the nutshell, WUID generates 64-bit integers in sequence. The high 28 bits are loaded from a data store. By now, Redis, MySQL and MongoDB are supported.
-- The uniqueness is guaranteed as long as all WUID instances share a same data store or each of them has a different section ID.
-- WUID automatically renews the high 28 bits when the low 36 bits are about to run out.
-- WUID is thread-safe, and lock free.
+- `WUID` is a universal unique identifier generator.
+- `WUID` is much faster than traditional UUID. Each `WUID` instance can even generate 100M unique identifiers in a single second.
+- In the nutshell, `WUID` generates 64-bit integers in sequence. The high 28 bits are loaded from a data source. By now, Redis, MySQL, MongoDB and Callback are supported.
+- The uniqueness is guaranteed as long as all `WUID` instances share a same data source or each group of them has a different section ID.
+- `WUID` automatically renews the high 28 bits when the low 36 bits are about to run out.
+- `WUID` is thread-safe, and lock free.
 - Obfuscation is supported.
 
 # Benchmarks
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS `wuid` (
 - `WithObfuscation` enables number obfuscation.
 
 # Attentions
-It is highly recommended to pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed". It indicates that the low 36 bits are about to run out in hours to hundreds of hours, and the renewal program failed for some reason. WUID will make many renewal attempts until succeeded or exhausted. 
+It is highly recommended to pass a logger to `wuid.NewWUID` and keep an eye on the warnings that include "renew failed". It indicates that the low 36 bits are about to run out in hours to hundreds of hours, and the renewal program failed for some reason. `WUID` will make many renewal attempts until succeeded. 
 
 # Special thanks
 - [dustinfog](https://github.com/dustinfog)
