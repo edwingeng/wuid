@@ -55,7 +55,7 @@ func NewWUID(name string, logger slog.Logger, opts ...Option) (w *WUID) {
 	if logger != nil {
 		w.Logger = logger
 	} else {
-		w.Logger = slog.NewConsoleLogger()
+		w.Logger = slog.NewDevelopmentConfig().MustBuild()
 	}
 	for _, opt := range opts {
 		opt(w)
