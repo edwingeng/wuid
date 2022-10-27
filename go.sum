@@ -10,8 +10,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
-github.com/edwingeng/slog v0.0.0-20220922173917-1a139dfeec55 h1:2M3QjdLQVHV6YIUEWoy4Q947nH3q+MvEXZeOrLy5Frw=
-github.com/edwingeng/slog v0.0.0-20220922173917-1a139dfeec55/go.mod h1:mfngKiTrPWlUpIkQjkVzlumITH8chNhxsAiMklqH4Bo=
+github.com/edwingeng/slog v0.0.0-20221027170832-482f0dfb6247 h1:1Vb/cbeFfMh9q+CxEMLSJlHciX9x3JHdaNyHlvhGxhk=
+github.com/edwingeng/slog v0.0.0-20221027170832-482f0dfb6247/go.mod h1:mfngKiTrPWlUpIkQjkVzlumITH8chNhxsAiMklqH4Bo=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=

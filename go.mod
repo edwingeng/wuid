@@ -3,7 +3,7 @@ module github.com/edwingeng/wuid
 go 1.12
 
 require (
-	github.com/edwingeng/slog v0.0.0-20220922173917-1a139dfeec55
+	github.com/edwingeng/slog v0.0.0-20221027170832-482f0dfb6247
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.6.0
