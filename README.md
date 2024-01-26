@@ -144,3 +144,6 @@ It is highly recommended to pass a logger to `wuid.NewWUID` and keep an eye on t
 
 # Special thanks
 - [dustinfog](https://github.com/dustinfog)
+
+# Ports
+- swift - https://github.com/ekscrypto/SwiftWUID
